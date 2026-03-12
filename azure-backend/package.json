@@ -1,0 +1,13 @@
+{
+  "name": "smart-hive-scale-backend",
+  "version": "1.0.0",
+  "description": "Azure Functions backend for Smart Hive Scale telemetry ingestion",
+  "scripts": {
+    "start": "func start"
+  },
+  "dependencies": {
+    "@azure/data-tables": "^13.3.0",
+    "@azure/identity": "^4.6.0"
+  },
+  "devDependencies": {}
+}

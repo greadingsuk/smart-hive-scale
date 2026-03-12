@@ -1,0 +1,96 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {},
+  "variables": {
+    "functionAppName": "hivescale",
+    "storageAccountName": "stgrpersonalhivescale",
+    "hostingPlanName": "asp-hivescale",
+    "location": "[resourceGroup().location]"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Web/serverfarms",
+      "apiVersion": "2023-12-01",
+      "name": "[variables('hostingPlanName')]",
+      "location": "[variables('location')]",
+      "sku": {
+        "tier": "FlexConsumption",
+        "name": "FC1"
+      },
+      "kind": "functionapp",
+      "properties": {
+        "reserved": true
+      },
+      "tags": {
+        "project": "grant-personal",
+        "app": "smart-hive-scale",
+        "owner": "greadings"
+      }
+    },
+    {
+      "type": "Microsoft.Web/sites",
+      "apiVersion": "2023-12-01",
+      "name": "[variables('functionAppName')]",
+      "location": "[variables('location')]",
+      "kind": "functionapp,linux",
+      "identity": {
+        "type": "SystemAssigned"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Web/serverfarms', variables('hostingPlanName'))]"
+      ],
+      "tags": {
+        "project": "grant-personal",
+        "app": "smart-hive-scale",
+        "owner": "greadings"
+      },
+      "properties": {
+        "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', variables('hostingPlanName'))]",
+        "httpsOnly": true,
+        "reserved": true,
+        "functionAppConfig": {
+          "deployment": {
+            "storage": {
+              "type": "blobContainer",
+              "value": "[concat('https://', variables('storageAccountName'), '.blob.core.windows.net/deployments')]",
+              "authentication": {
+                "type": "SystemAssignedIdentity"
+              }
+            }
+          },
+          "runtime": {
+            "name": "node",
+            "version": "20"
+          },
+          "scaleAndConcurrency": {
+            "maximumInstanceCount": 40,
+            "instanceMemoryMB": 2048
+          }
+        },
+        "siteConfig": {
+          "appSettings": [
+            {
+              "name": "AzureWebJobsStorage__accountName",
+              "value": "[variables('storageAccountName')]"
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "outputs": {
+    "functionAppName": {
+      "type": "string",
+      "value": "[variables('functionAppName')]"
+    },
+    "functionAppUrl": {
+      "type": "string",
+      "value": "[concat('https://', reference(resourceId('Microsoft.Web/sites', variables('functionAppName'))).defaultHostName)]"
+    },
+    "principalId": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Web/sites', variables('functionAppName')), '2023-12-01', 'Full').identity.principalId]"
+    }
+  }
+}
