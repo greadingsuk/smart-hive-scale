@@ -1,0 +1,47 @@
+name: Deploy Function App
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'azure-backend/**'
+      - '.github/workflows/deploy-function-app.yml'
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        working-directory: azure-backend
+        run: npm ci
+
+      - name: Create deployment package
+        working-directory: azure-backend
+        run: zip -r ../deploy.zip . -x "*.git*"
+
+      - name: Azure Login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Deploy to Azure Functions
+        run: |
+          az functionapp deployment source config-zip \
+            --resource-group rg-gr-personal-hivescale \
+            --name hivescale \
+            --src deploy.zip

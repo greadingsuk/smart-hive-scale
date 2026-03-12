@@ -1,0 +1,40 @@
+name: Deploy Dashboard
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'web-dashboard/**'
+      - '.github/workflows/deploy-dashboard.yml'
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Create deployment package
+        working-directory: web-dashboard
+        run: zip -r ../dashboard.zip .
+
+      - name: Azure Login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Deploy to App Service
+        run: |
+          az webapp deploy \
+            --resource-group rg-gr-personal-hivescale \
+            --name hivescale-dashboard \
+            --src-path dashboard.zip \
+            --type zip
