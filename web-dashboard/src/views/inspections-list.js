@@ -5,16 +5,26 @@ import { renderHeader } from '../components/ui.js';
 import { getAllActivity } from '../api/dataverse.js';
 
 export function renderInspections(app) {
-  const all = getAllActivity().filter(a => a.type === 'Inspection');
+  const urlParams = new URLSearchParams(window.location.hash.split('?')[1] || '');
+  const dateFilter = urlParams.get('date') || '';
+  let filtered = getAllActivity().filter(a => a.type === 'Inspection');
+  if (dateFilter) filtered = filtered.filter(a => a.date === dateFilter);
+
+  const title = dateFilter
+    ? `Inspections — ${new Date(dateFilter).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}`
+    : 'All Inspections';
 
   app.innerHTML = `
-    ${renderHeader('All Inspections', true)}
+    ${renderHeader(title, true)}
     <main class="max-w-6xl mx-auto p-4 pb-8">
-      <h2 class="section-title mb-4">${all.length} Inspections</h2>
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="section-title">${filtered.length} Inspection${filtered.length !== 1 ? 's' : ''}</h2>
+        ${dateFilter ? '<a href="#/inspections" class="section-subtitle text-hive-gold">View all</a>' : ''}
+      </div>
       <div class="space-y-2">
-        ${all.map((a, i) => {
+        ${filtered.map((a, i) => {
           return `
-          <a href="#/inspection/${a.id || i}" class="card-surface flex items-center justify-between p-3 block">
+          <a href="#/inspection/${a.id || i}${dateFilter ? '?from=inspections&date=' + dateFilter : ''}" class="card-surface flex items-center justify-between p-3 block">
             <div class="flex-1 min-w-0">
               <div class="flex items-center gap-2 mb-1">
                 <span class="text-sm font-medium text-hive-text">${a.hive}</span>
@@ -28,7 +38,7 @@ export function renderInspections(app) {
             </div>
           </a>`;
         }).join('')}
-        ${all.length === 0 ? '<p class="text-hive-muted text-center py-8">No inspections recorded.</p>' : ''}
+        ${filtered.length === 0 ? '<p class="text-hive-muted text-center py-8">No inspections found.</p>' : ''}
       </div>
     </main>
   `;

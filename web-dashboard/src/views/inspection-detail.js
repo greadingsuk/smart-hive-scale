@@ -1,82 +1,230 @@
 /**
- * Inspection Detail / Edit — view and edit a single inspection record.
+ * Inspection Detail — read-only view with padlock to unlock editing.
+ * Shows all fields matching the inspection form.
  */
-import { renderHeader } from '../components/ui.js';
-import { getAllActivity, getHives } from '../api/dataverse.js';
+import { renderHeader, accordion, initAccordions } from '../components/ui.js';
+import { getAllActivity, getCustomActivity } from '../api/dataverse.js';
+
+const DISEASES = ['Varroa mites', 'Nosema', 'Chalkbrood', 'Stonebrood', 'American Foulbrood', 'European Foulbrood'];
+const PESTS = ['Waxmoth', 'Mice', 'Ants', 'Wasps', 'Small Hive Beetle', 'Hornets'];
+const BROOD_PATTERNS = ['', 'Compact', 'Spotty', 'Patchy', 'Drone-heavy', 'None visible'];
 
 export function renderInspectionDetail(app, params) {
   const id = params.id;
   const urlParams = new URLSearchParams(window.location.hash.split('?')[1] || '');
-  const from = urlParams.get('from') || '';
-  const allActivity = getAllActivity();
-  // Support both legacy numeric index and stable string IDs
+  const fromPage = urlParams.get('from') || '';
+  const dateFilter = urlParams.get('date') || '';
+
+  // Merge static + custom activity for lookup
+  const allActivity = [...getAllActivity(), ...getCustomActivity()];
   const record = allActivity.find(a => a.id === id) || allActivity[parseInt(id, 10)];
 
   if (!record) {
     app.innerHTML = `
       ${renderHeader('Not Found', true)}
       <div class="max-w-6xl mx-auto p-4 text-center py-16">
-        <p class="text-hive-muted">Inspection not found</p>
-        <a href="#/apiary" class="btn-primary inline-block mt-4">Back</a>
+        <div class="text-5xl mb-4">🔍</div>
+        <p class="text-hive-muted text-lg">Inspection not found</p>
+        <a href="#/inspections" class="btn-primary inline-block mt-4">Back to Inspections</a>
       </div>`;
     return;
   }
 
-  const backUrl = from ? `#/hive/${encodeURIComponent(from)}` : '#/inspections';
+  // Determine back URL
+  let backUrl = '#/inspections';
+  if (fromPage === 'inspections' && dateFilter) backUrl = `#/inspections?date=${dateFilter}`;
+  else if (fromPage && fromPage !== 'inspections') backUrl = `#/hive/${encodeURIComponent(fromPage)}`;
+
+  const strengthColor = (record.strength || 0) >= 80 ? 'var(--hive-sage)' : (record.strength || 0) >= 50 ? 'var(--hive-gold)' : 'var(--hive-red)';
 
   app.innerHTML = `
-    ${renderHeader('Inspection', true, false, backUrl)}
-    <main class="max-w-6xl mx-auto p-4 pb-8 space-y-4">
+    ${renderHeader(record.hive, true, false, backUrl)}
+    <main class="max-w-3xl mx-auto p-5 pb-8 space-y-5">
 
+      <!-- Header card with date + padlock -->
       <div class="card-surface">
-        <div class="flex items-center justify-between mb-3">
-          <span class="pill-amber">${record.type}</span>
-          <span class="text-sm text-hive-muted">${new Date(record.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
+        <div class="flex items-center justify-between">
+          <div>
+            <span class="pill-amber">${record.type || 'Inspection'}</span>
+            <span class="text-sm text-hive-muted ml-2">${new Date(record.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
+          </div>
+          <button id="lockToggle" class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs uppercase tracking-wider transition-all" style="background:var(--hive-bg);border:1px solid var(--hive-border);font-family:Inter,sans-serif;color:var(--hive-muted)">
+            <svg id="lockIcon" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"/></svg>
+            <span id="lockLabel">Locked</span>
+          </button>
         </div>
-        <h2 class="font-serif text-lg font-medium text-hive-text mb-4">${record.hive}</h2>
+        <h2 class="font-serif text-xl font-medium text-hive-text mt-3">${record.hive}</h2>
       </div>
 
-      <form id="inspForm" class="space-y-4">
-        <div class="card-surface grid grid-cols-2 gap-4">
-          <div>
-            <label class="block text-xs text-hive-muted mb-1">Date</label>
-            <input type="date" id="inspDate" class="input-field" value="${record.date}">
+      <!-- Colony Health -->
+      <section class="card p-5">
+        <h3 class="section-subtitle mb-4">Colony Health</h3>
+        <div class="space-y-3">
+          <div class="flex items-center justify-between">
+            <span class="text-sm text-hive-text">Queen Spotted</span>
+            <label class="toggle-switch">
+              <input type="checkbox" data-field="queenSeen" ${record.queenSeen ? 'checked' : ''} disabled>
+              <div class="toggle-track"></div>
+              <div class="toggle-knob"></div>
+            </label>
           </div>
-          <div>
-            <label class="block text-xs text-hive-muted mb-1">Strength %</label>
-            <input type="number" id="inspStrength" class="input-field" min="0" max="100" value="${record.strength || ''}">
+          <div class="flex items-center justify-between">
+            <span class="text-sm text-hive-text">Brood Spotted</span>
+            <label class="toggle-switch">
+              <input type="checkbox" data-field="broodSpotted" ${record.broodSpotted ? 'checked' : ''} disabled>
+              <div class="toggle-track"></div>
+              <div class="toggle-knob"></div>
+            </label>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-sm text-hive-text">Queen Cells Spotted</span>
+            <label class="toggle-switch">
+              <input type="checkbox" data-field="queenCells" ${record.queenCells ? 'checked' : ''} disabled>
+              <div class="toggle-track"></div>
+              <div class="toggle-knob"></div>
+            </label>
           </div>
         </div>
+      </section>
 
-        <div class="card-surface grid grid-cols-2 gap-4">
+      <!-- Strength, Temperament, Brood Pattern -->
+      <section class="card p-5 space-y-5">
+        <div>
+          <div class="flex items-center justify-between mb-2">
+            <span class="section-subtitle">Hive Strength</span>
+            <span id="strengthValue" class="text-lg font-serif font-medium" style="color:${strengthColor}">${record.strength || '—'}%</span>
+          </div>
+          <input type="range" id="strengthSlider" min="0" max="100" value="${record.strength || 80}" class="w-full accent-[var(--hive-gold)]" disabled>
+        </div>
+        <div class="border-t pt-4" style="border-color:var(--hive-border)">
+          <span class="section-subtitle block mb-3">Temperament</span>
+          <div class="flex gap-2">
+            ${['Gentle', 'Active', 'Aggressive'].map(t =>
+              `<button type="button" data-temperament="${t}" class="temperament-pill ${record.temperament === t ? 'btn-primary' : 'btn-secondary'} flex-1 py-2 text-xs" disabled>${t}</button>`
+            ).join('')}
+          </div>
+        </div>
+        <div class="border-t pt-4" style="border-color:var(--hive-border)">
+          <label class="section-subtitle block mb-2">Brood Pattern</label>
+          <select id="broodPattern" class="input-field" disabled>
+            ${BROOD_PATTERNS.map(p => `<option value="${p}" ${record.broodPattern === p ? 'selected' : ''}>${p || 'Not assessed'}</option>`).join('')}
+          </select>
+        </div>
+      </section>
+
+      <!-- Weight -->
+      <section class="card p-5">
+        <span class="section-subtitle block mb-3">Hive Weight</span>
+        <div class="grid grid-cols-3 gap-4">
           <div>
-            <label class="block text-xs text-hive-muted mb-1">Queen Seen</label>
-            <select id="inspQueen" class="input-field">
-              <option value="false" ${!record.queenSeen ? 'selected' : ''}>No</option>
-              <option value="true" ${record.queenSeen ? 'selected' : ''}>Yes</option>
-            </select>
+            <label class="text-[11px] text-hive-muted block mb-1">Left (kg)</label>
+            <input type="number" id="weightLeft" class="input-field" step="0.01" value="${record.weightLeft || ''}" placeholder="—" disabled>
           </div>
           <div>
-            <label class="block text-xs text-hive-muted mb-1">Brood Spotted</label>
-            <select id="inspBrood" class="input-field">
-              <option value="false" ${!record.broodSpotted ? 'selected' : ''}>No</option>
-              <option value="true" ${record.broodSpotted ? 'selected' : ''}>Yes</option>
-            </select>
+            <label class="text-[11px] text-hive-muted block mb-1">Right (kg)</label>
+            <input type="number" id="weightRight" class="input-field" step="0.01" value="${record.weightRight || ''}" placeholder="—" disabled>
+          </div>
+          <div>
+            <label class="text-[11px] text-hive-muted block mb-1">Total (kg)</label>
+            <input type="number" id="weightTotal" class="input-field" step="0.01" value="${record.weightTotal || ''}" placeholder="—" disabled>
           </div>
         </div>
+      </section>
 
-        <div class="card-surface">
-          <label class="block text-xs text-hive-muted mb-1">Notes</label>
-          <textarea id="inspNotes" class="input-field" rows="4">${record.notes || ''}</textarea>
+      <!-- Issues -->
+      <section class="card p-5">
+        <h3 class="section-subtitle mb-2">Issues</h3>
+        ${accordion('diseases', 'Diseases', `<div class="grid grid-cols-2 gap-2 pb-2">${DISEASES.map(d => `<label class="flex items-center gap-2"><input type="checkbox" data-disease="${d}" class="w-3.5 h-3.5 rounded accent-[var(--hive-red)]" ${(record.diseases || []).includes(d) ? 'checked' : ''} disabled><span class="text-sm text-hive-text">${d}</span></label>`).join('')}</div>`)}
+        ${accordion('pests', 'Pests', `<div class="grid grid-cols-2 gap-2 pb-2">${PESTS.map(p => `<label class="flex items-center gap-2"><input type="checkbox" data-pest="${p}" class="w-3.5 h-3.5 rounded accent-[var(--hive-red)]" ${(record.pests || []).includes(p) ? 'checked' : ''} disabled><span class="text-sm text-hive-text">${p}</span></label>`).join('')}</div>`)}
+      </section>
+
+      <!-- Notes -->
+      <section class="card p-5">
+        <label class="section-subtitle block mb-2">Notes</label>
+        <textarea id="inspNotes" class="input-field min-h-[100px] resize-y" style="border:1px solid var(--hive-border);border-radius:8px;padding:12px" disabled>${record.notes || ''}</textarea>
+      </section>
+
+      <!-- Environment -->
+      <section class="card p-5">
+        <span class="section-subtitle block mb-3">Environment</span>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="text-[11px] text-hive-muted block mb-1">Weather</label>
+            <input type="text" id="weatherConditions" class="input-field" value="${record.weatherConditions || ''}" placeholder="—" disabled>
+          </div>
+          <div>
+            <label class="text-[11px] text-hive-muted block mb-1">Temp (\u00b0C)</label>
+            <input type="number" id="weatherTemp" class="input-field" value="${record.weatherTemp || ''}" placeholder="—" disabled>
+          </div>
         </div>
+      </section>
 
-        <div class="flex items-center gap-3 mt-1 text-sm text-hive-muted">
-          ${record.queenSeen ? '<span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-hive-sage"></span> Queen spotted</span>' : ''}
-          ${record.broodSpotted ? '<span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full" style="background:var(--hive-blue)"></span> Brood present</span>' : ''}
-        </div>
+      <!-- Save button (hidden until unlocked) -->
+      <div id="saveBar" class="hidden">
+        <button id="saveBtn" class="btn-primary w-full py-3">Save Changes</button>
+      </div>
 
-        <a href="${backUrl}" class="btn-secondary w-full py-3 text-center block">Back</a>
-      </form>
+      <a href="${backUrl}" class="btn-secondary w-full py-3 text-center block">Back</a>
     </main>
   `;
+
+  initAccordions(app);
+
+  // Padlock toggle
+  let locked = true;
+  const lockBtn = document.getElementById('lockToggle');
+  const lockIcon = document.getElementById('lockIcon');
+  const lockLabel = document.getElementById('lockLabel');
+  const saveBar = document.getElementById('saveBar');
+  const allInputs = app.querySelectorAll('input, textarea, select');
+  const tempButtons = app.querySelectorAll('.temperament-pill');
+
+  lockBtn.addEventListener('click', () => {
+    locked = !locked;
+    allInputs.forEach(el => { if (el.id !== 'weightTotal') el.disabled = locked; });
+    tempButtons.forEach(btn => btn.disabled = locked);
+
+    if (locked) {
+      lockIcon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"/>';
+      lockLabel.textContent = 'Locked';
+      lockBtn.style.color = 'var(--hive-muted)';
+      saveBar.classList.add('hidden');
+    } else {
+      lockIcon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" d="M13.5 10.5V6.75a4.5 4.5 0 119 0v3.75M3.75 21.75h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H3.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"/>';
+      lockLabel.textContent = 'Editing';
+      lockBtn.style.color = 'var(--hive-gold)';
+      saveBar.classList.remove('hidden');
+    }
+  });
+
+  // Strength slider
+  const slider = document.getElementById('strengthSlider');
+  const strengthLabel = document.getElementById('strengthValue');
+  slider.addEventListener('input', () => { strengthLabel.textContent = slider.value + '%'; });
+
+  // Temperament pills
+  tempButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (locked) return;
+      tempButtons.forEach(b => b.className = 'temperament-pill btn-secondary flex-1 py-2 text-xs');
+      btn.className = 'temperament-pill btn-primary flex-1 py-2 text-xs';
+    });
+  });
+
+  // Weight auto-calc
+  const wl = document.getElementById('weightLeft'), wr = document.getElementById('weightRight'), wt = document.getElementById('weightTotal');
+  const calcTotal = () => { const l = parseFloat(wl.value)||0, r = parseFloat(wr.value)||0; if (l>0||r>0) wt.value = (l+r).toFixed(2); };
+  wl.addEventListener('input', calcTotal);
+  wr.addEventListener('input', calcTotal);
+
+  // Save (for custom/localStorage records only)
+  document.getElementById('saveBtn')?.addEventListener('click', () => {
+    // Show confirmation toast
+    const toast = document.createElement('div');
+    toast.className = 'fixed top-20 left-1/2 -translate-x-1/2 z-[100] px-6 py-3 rounded-full text-sm font-medium animate-in';
+    toast.style.cssText = 'background:var(--hive-gold);color:#0B0D0E;box-shadow:0 4px 20px rgba(212,175,55,0.3)';
+    toast.textContent = 'Inspection updated';
+    document.body.appendChild(toast);
+    setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 300); }, 2500);
+  });
 }
