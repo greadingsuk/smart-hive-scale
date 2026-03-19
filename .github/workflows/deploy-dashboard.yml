@@ -20,9 +20,22 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Create deployment package
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
         working-directory: web-dashboard
-        run: zip -r ../dashboard.zip .
+        run: npm ci
+
+      - name: Build
+        working-directory: web-dashboard
+        run: npm run build
+
+      - name: Create deployment package
+        working-directory: web-dashboard/dist
+        run: zip -r ../../dashboard.zip .
 
       - name: Azure Login (OIDC)
         uses: azure/login@v2
