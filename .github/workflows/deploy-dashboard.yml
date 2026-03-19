@@ -48,6 +48,6 @@ jobs:
         run: |
           az webapp deploy \
             --resource-group rg-gr-personal-hivescale \
-            --name hivescale-dashboard \
+            --name apiary-ai \
             --src-path dashboard.zip \
             --type zip
