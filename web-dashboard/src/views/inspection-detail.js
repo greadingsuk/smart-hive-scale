@@ -5,11 +5,12 @@ import { renderHeader } from '../components/ui.js';
 import { getAllActivity, getHives } from '../api/dataverse.js';
 
 export function renderInspectionDetail(app, params) {
-  const idx = parseInt(params.id, 10);
+  const id = params.id;
   const urlParams = new URLSearchParams(window.location.hash.split('?')[1] || '');
   const from = urlParams.get('from') || '';
   const allActivity = getAllActivity();
-  const record = allActivity[idx];
+  // Support both legacy numeric index and stable string IDs
+  const record = allActivity.find(a => a.id === id) || allActivity[parseInt(id, 10)];
 
   if (!record) {
     app.innerHTML = `

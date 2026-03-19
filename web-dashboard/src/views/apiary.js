@@ -112,7 +112,7 @@ export async function renderApiary(app) {
         </div>
         <div class="space-y-2">
           ${timeline.slice(0, 5).map(g => `
-            <a href="#/activity/${g.date}" class="card flex items-center gap-3 p-4 block">
+            <a href="#/inspections" class="card flex items-center gap-3 p-4 block">
               <div class="timeline-dot">
                 <svg class="w-3 h-3 text-hive-gold" fill="none" stroke="currentColor" stroke-width="1.25" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2"/></svg>
               </div>

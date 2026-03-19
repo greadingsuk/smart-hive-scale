@@ -13,9 +13,8 @@ export function renderInspections(app) {
       <h2 class="section-title mb-4">${all.length} Inspections</h2>
       <div class="space-y-2">
         ${all.map((a, i) => {
-          const globalIdx = getAllActivity().indexOf(a);
           return `
-          <a href="#/inspection/${globalIdx}" class="card-surface flex items-center justify-between p-3 block">
+          <a href="#/inspection/${a.id || i}" class="card-surface flex items-center justify-between p-3 block">
             <div class="flex-1 min-w-0">
               <div class="flex items-center gap-2 mb-1">
                 <span class="text-sm font-medium text-hive-text">${a.hive}</span>

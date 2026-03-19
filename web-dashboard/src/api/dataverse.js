@@ -44,57 +44,57 @@ export const APIARY = {
 export function getAllActivity() {
   return [
     // Sep 26 — weight checks all hives
-    { date: '2025-09-26', type: 'Inspection', hive: 'Hive 1 - Obsidian', strength: 100, queenSeen: false, broodSpotted: false, notes: 'Left 15.83 Right 15.43' },
-    { date: '2025-09-26', type: 'Inspection', hive: 'Hive 2 - BMH', strength: 100, queenSeen: false, broodSpotted: false, notes: 'Left 15.46 right 13.90' },
-    { date: '2025-09-26', type: 'Inspection', hive: 'Hive 4 - Carly', strength: 71, queenSeen: false, broodSpotted: false, notes: 'Left 12.98 right 13.04' },
-    { date: '2025-09-26', type: 'Inspection', hive: 'Hive 5 - Survivor', strength: 100, queenSeen: false, broodSpotted: false, notes: '16.39 left 15.81 right' },
-    { date: '2025-09-26', type: 'Inspection', hive: 'Hive 6 - Backup', strength: 100, queenSeen: false, broodSpotted: false, notes: '7.66 left 7.27 right' },
+    { id: 'a1', date: '2025-09-26', type: 'Inspection', hive: 'Hive 1 - Obsidian', strength: 100, queenSeen: false, broodSpotted: false, notes: 'Left 15.83 Right 15.43' },
+    { id: 'a2', date: '2025-09-26', type: 'Inspection', hive: 'Hive 2 - BMH', strength: 100, queenSeen: false, broodSpotted: false, notes: 'Left 15.46 right 13.90' },
+    { id: 'a3', date: '2025-09-26', type: 'Inspection', hive: 'Hive 4 - Carly', strength: 71, queenSeen: false, broodSpotted: false, notes: 'Left 12.98 right 13.04' },
+    { id: 'a4', date: '2025-09-26', type: 'Inspection', hive: 'Hive 5 - Survivor', strength: 100, queenSeen: false, broodSpotted: false, notes: '16.39 left 15.81 right' },
+    { id: 'a5', date: '2025-09-26', type: 'Inspection', hive: 'Hive 6 - Backup', strength: 100, queenSeen: false, broodSpotted: false, notes: '7.66 left 7.27 right' },
     // Sep 8 — detailed inspections
-    { date: '2025-09-08', type: 'Inspection', hive: 'Hive 4 - Carly', strength: 71, queenSeen: false, broodSpotted: true, notes: 'There is a queen but couldn\'t find her. They were active but need to be fed and assessed after winter.' },
-    { date: '2025-09-08', type: 'Inspection', hive: 'Hive 1 - Obsidian', strength: 100, queenSeen: true, broodSpotted: true, notes: 'F1 - stores 70% F2- Stores 50% F3- eggs brood stores 40% F4 - brood, eggs, queen stores 20%...' },
-    { date: '2025-09-08', type: 'Inspection', hive: 'Hive 5 - Survivor', strength: 100, queenSeen: false, broodSpotted: false, notes: 'Lots of bees with stores but will need feeding still. Queen spotted and could see brood larve and eggs.' },
-    { date: '2025-09-08', type: 'Inspection', hive: 'Hive 6 - Backup', strength: 100, queenSeen: true, broodSpotted: true, notes: 'F1 - stores 10% F2 - brood and larve stores 20% F3 - Brood stores 40%...' },
-    { date: '2025-09-08', type: 'Inspection', hive: 'Hive 2 - BMH', strength: 100, queenSeen: true, broodSpotted: true, notes: 'F1 - stores 10% F2 - stores 10% F3 - stores 30%... queen larve eggs tiny brood.' },
+    { id: 'a6', date: '2025-09-08', type: 'Inspection', hive: 'Hive 4 - Carly', strength: 71, queenSeen: false, broodSpotted: true, notes: 'There is a queen but couldn\'t find her. They were active but need to be fed and assessed after winter.' },
+    { id: 'a7', date: '2025-09-08', type: 'Inspection', hive: 'Hive 1 - Obsidian', strength: 100, queenSeen: true, broodSpotted: true, notes: 'F1 - stores 70% F2- Stores 50% F3- eggs brood stores 40% F4 - brood, eggs, queen stores 20%...' },
+    { id: 'a8', date: '2025-09-08', type: 'Inspection', hive: 'Hive 5 - Survivor', strength: 100, queenSeen: false, broodSpotted: false, notes: 'Lots of bees with stores but will need feeding still. Queen spotted and could see brood larve and eggs.' },
+    { id: 'a9', date: '2025-09-08', type: 'Inspection', hive: 'Hive 6 - Backup', strength: 100, queenSeen: true, broodSpotted: true, notes: 'F1 - stores 10% F2 - brood and larve stores 20% F3 - Brood stores 40%...' },
+    { id: 'a10', date: '2025-09-08', type: 'Inspection', hive: 'Hive 2 - BMH', strength: 100, queenSeen: true, broodSpotted: true, notes: 'F1 - stores 10% F2 - stores 10% F3 - stores 30%... queen larve eggs tiny brood.' },
     // Sep 5
-    { date: '2025-09-05', type: 'Inspection', hive: 'Hive 6 - Backup', strength: 100, queenSeen: false, broodSpotted: false, notes: 'Left 6.69 Right 7.32' },
-    { date: '2025-09-05', type: 'Inspection', hive: 'Hive 5 - Survivor', strength: 100, queenSeen: false, broodSpotted: false, notes: 'Left 12.76 right 11.55' },
-    { date: '2025-09-05', type: 'Inspection', hive: 'Hive 2 - BMH', strength: 100, queenSeen: false, broodSpotted: false, notes: 'Left 12.66 Right 12.37' },
-    { date: '2025-09-05', type: 'Inspection', hive: 'Hive 1 - Obsidian', strength: 100, queenSeen: false, broodSpotted: false, notes: 'Left 14.39 Right 13.93' },
+    { id: 'a11', date: '2025-09-05', type: 'Inspection', hive: 'Hive 6 - Backup', strength: 100, queenSeen: false, broodSpotted: false, notes: 'Left 6.69 Right 7.32' },
+    { id: 'a12', date: '2025-09-05', type: 'Inspection', hive: 'Hive 5 - Survivor', strength: 100, queenSeen: false, broodSpotted: false, notes: 'Left 12.76 right 11.55' },
+    { id: 'a13', date: '2025-09-05', type: 'Inspection', hive: 'Hive 2 - BMH', strength: 100, queenSeen: false, broodSpotted: false, notes: 'Left 12.66 Right 12.37' },
+    { id: 'a14', date: '2025-09-05', type: 'Inspection', hive: 'Hive 1 - Obsidian', strength: 100, queenSeen: false, broodSpotted: false, notes: 'Left 14.39 Right 13.93' },
     // Aug 25
-    { date: '2025-08-25', type: 'Inspection', hive: 'Hive 6 - Backup', strength: 100, queenSeen: false, broodSpotted: false, notes: 'Left 5.71 Right 6.45 added feed' },
-    { date: '2025-08-25', type: 'Inspection', hive: 'Hive 5 - Survivor', strength: 100, queenSeen: false, broodSpotted: false, notes: 'Left 12.75 Right 11.03 added feed' },
-    { date: '2025-08-25', type: 'Inspection', hive: 'Hive 2 - BMH', strength: 100, queenSeen: false, broodSpotted: false, notes: 'Left 12.09 Right 11.66 added feed' },
-    { date: '2025-08-25', type: 'Inspection', hive: 'Hive 1 - Obsidian', strength: 100, queenSeen: false, broodSpotted: false, notes: 'Left 13.33 Right 12.61 added more feed' },
+    { id: 'a15', date: '2025-08-25', type: 'Inspection', hive: 'Hive 6 - Backup', strength: 100, queenSeen: false, broodSpotted: false, notes: 'Left 5.71 Right 6.45 added feed' },
+    { id: 'a16', date: '2025-08-25', type: 'Inspection', hive: 'Hive 5 - Survivor', strength: 100, queenSeen: false, broodSpotted: false, notes: 'Left 12.75 Right 11.03 added feed' },
+    { id: 'a17', date: '2025-08-25', type: 'Inspection', hive: 'Hive 2 - BMH', strength: 100, queenSeen: false, broodSpotted: false, notes: 'Left 12.09 Right 11.66 added feed' },
+    { id: 'a18', date: '2025-08-25', type: 'Inspection', hive: 'Hive 1 - Obsidian', strength: 100, queenSeen: false, broodSpotted: false, notes: 'Left 13.33 Right 12.61 added more feed' },
     // Aug 17
-    { date: '2025-08-17', type: 'Inspection', hive: 'Hive 1 - Obsidian', strength: 100, queenSeen: false, broodSpotted: false, notes: 'Super off and feeder added' },
-    { date: '2025-08-17', type: 'Inspection', hive: 'Hive 2 - BMH', strength: 100, queenSeen: false, broodSpotted: false, notes: 'Super off and feeders added' },
-    { date: '2025-08-17', type: 'Inspection', hive: 'Hive 5 - Survivor', strength: 100, queenSeen: false, broodSpotted: false, notes: 'Supers off and feeder added' },
-    { date: '2025-08-17', type: 'Inspection', hive: 'Hive 6 - Backup', strength: 100, queenSeen: true, broodSpotted: true, notes: 'Bit light for winter so added feeder and will start to feed' },
+    { id: 'a19', date: '2025-08-17', type: 'Inspection', hive: 'Hive 1 - Obsidian', strength: 100, queenSeen: false, broodSpotted: false, notes: 'Super off and feeder added' },
+    { id: 'a20', date: '2025-08-17', type: 'Inspection', hive: 'Hive 2 - BMH', strength: 100, queenSeen: false, broodSpotted: false, notes: 'Super off and feeders added' },
+    { id: 'a21', date: '2025-08-17', type: 'Inspection', hive: 'Hive 5 - Survivor', strength: 100, queenSeen: false, broodSpotted: false, notes: 'Supers off and feeder added' },
+    { id: 'a22', date: '2025-08-17', type: 'Inspection', hive: 'Hive 6 - Backup', strength: 100, queenSeen: true, broodSpotted: true, notes: 'Bit light for winter so added feeder and will start to feed' },
     // Jul 28
-    { date: '2025-07-28', type: 'Inspection', hive: 'Hive 1 - Obsidian', strength: 100, queenSeen: true, broodSpotted: true, notes: 'Built up well. Removed a super to help them finish off and condense down.' },
-    { date: '2025-07-28', type: 'Inspection', hive: 'Hive 2 - BMH', strength: 100, queenSeen: true, broodSpotted: true, notes: 'Doing really well. Removed one super condense them down.' },
-    { date: '2025-07-28', type: 'Inspection', hive: 'Hive 4 - Carly', strength: 100, queenSeen: false, broodSpotted: false, notes: 'No queen. Loads of stores and still horrid.' },
-    { date: '2025-07-28', type: 'Inspection', hive: 'Hive 5 - Survivor', strength: 100, queenSeen: true, broodSpotted: true, notes: 'Doing really well. Supers swapped about so they can finish capping.' },
-    { date: '2025-07-28', type: 'Inspection', hive: 'Hive 6 - Backup', strength: 100, queenSeen: true, broodSpotted: true, notes: 'Queen found. Clipped and marked. She is laying and they are building up.' },
+    { id: 'a23', date: '2025-07-28', type: 'Inspection', hive: 'Hive 1 - Obsidian', strength: 100, queenSeen: true, broodSpotted: true, notes: 'Built up well. Removed a super to help them finish off and condense down.' },
+    { id: 'a24', date: '2025-07-28', type: 'Inspection', hive: 'Hive 2 - BMH', strength: 100, queenSeen: true, broodSpotted: true, notes: 'Doing really well. Removed one super condense them down.' },
+    { id: 'a25', date: '2025-07-28', type: 'Inspection', hive: 'Hive 4 - Carly', strength: 100, queenSeen: false, broodSpotted: false, notes: 'No queen. Loads of stores and still horrid.' },
+    { id: 'a26', date: '2025-07-28', type: 'Inspection', hive: 'Hive 5 - Survivor', strength: 100, queenSeen: true, broodSpotted: true, notes: 'Doing really well. Supers swapped about so they can finish capping.' },
+    { id: 'a27', date: '2025-07-28', type: 'Inspection', hive: 'Hive 6 - Backup', strength: 100, queenSeen: true, broodSpotted: true, notes: 'Queen found. Clipped and marked. She is laying and they are building up.' },
     // Jun 30
-    { date: '2025-06-30', type: 'Inspection', hive: 'Hive 4 - Carly', strength: 100, queenSeen: true, broodSpotted: false, notes: 'Let queen out of cage' },
+    { id: 'a28', date: '2025-06-30', type: 'Inspection', hive: 'Hive 4 - Carly', strength: 100, queenSeen: true, broodSpotted: false, notes: 'Let queen out of cage' },
     // Jun 25
-    { date: '2025-06-25', type: 'Hive Added', hive: 'Hive 6 - Backup', strength: null, queenSeen: false, broodSpotted: false, notes: 'Made from BMH buckfast' },
-    { date: '2025-06-25', type: 'Inspection', hive: 'Hive 2 - BMH', strength: 100, queenSeen: true, broodSpotted: true, notes: 'Good temper and very productive. Took 1 frame nuc off them as insurance policy' },
-    { date: '2025-06-25', type: 'Inspection', hive: 'Hive 1 - Obsidian', strength: 100, queenSeen: true, broodSpotted: true, notes: 'All doing good. Slightly up in face but not to bad.' },
-    { date: '2025-06-25', type: 'Inspection', hive: 'Hive 5 - Survivor', strength: 100, queenSeen: true, broodSpotted: true, notes: 'Added in super' },
+    { id: 'a29', date: '2025-06-25', type: 'Hive Added', hive: 'Hive 6 - Backup', strength: null, queenSeen: false, broodSpotted: false, notes: 'Made from BMH buckfast' },
+    { id: 'a30', date: '2025-06-25', type: 'Inspection', hive: 'Hive 2 - BMH', strength: 100, queenSeen: true, broodSpotted: true, notes: 'Good temper and very productive. Took 1 frame nuc off them as insurance policy' },
+    { id: 'a31', date: '2025-06-25', type: 'Inspection', hive: 'Hive 1 - Obsidian', strength: 100, queenSeen: true, broodSpotted: true, notes: 'All doing good. Slightly up in face but not to bad.' },
+    { id: 'a32', date: '2025-06-25', type: 'Inspection', hive: 'Hive 5 - Survivor', strength: 100, queenSeen: true, broodSpotted: true, notes: 'Added in super' },
     // Jun 20
-    { date: '2025-06-20', type: 'Inspection', hive: 'Hive 4 - Carly', strength: 100, queenSeen: true, broodSpotted: true, notes: 'Ripped down QC and placed new queen in from mating nuc in the queen cage.' },
+    { id: 'a33', date: '2025-06-20', type: 'Inspection', hive: 'Hive 4 - Carly', strength: 100, queenSeen: true, broodSpotted: true, notes: 'Ripped down QC and placed new queen in from mating nuc in the queen cage.' },
     // Jun 17
-    { date: '2025-06-17', type: 'Inspection', hive: 'Hive 5 - Survivor', strength: 100, queenSeen: true, broodSpotted: true, notes: 'Going really well. Stores in brood box that could move up.' },
-    { date: '2025-06-17', type: 'Inspection', hive: 'Hive 2 - BMH', strength: 100, queenSeen: true, broodSpotted: true, notes: 'Growing well added 2x supers for the coming flow.' },
-    { date: '2025-06-17', type: 'Inspection', hive: 'Nuc 1 - Obsidian', strength: 100, queenSeen: true, broodSpotted: true, notes: 'All looking good and added 2x supers.' },
+    { id: 'a34', date: '2025-06-17', type: 'Inspection', hive: 'Hive 5 - Survivor', strength: 100, queenSeen: true, broodSpotted: true, notes: 'Going really well. Stores in brood box that could move up.' },
+    { id: 'a35', date: '2025-06-17', type: 'Inspection', hive: 'Hive 2 - BMH', strength: 100, queenSeen: true, broodSpotted: true, notes: 'Growing well added 2x supers for the coming flow.' },
+    { id: 'a36', date: '2025-06-17', type: 'Inspection', hive: 'Nuc 1 - Obsidian', strength: 100, queenSeen: true, broodSpotted: true, notes: 'All looking good and added 2x supers.' },
     // Jun 13
-    { date: '2025-06-13', type: 'Inspection', hive: 'Hive 4 - Carly', strength: 82, queenSeen: true, broodSpotted: true, notes: 'Queen and 4 shakes off bees taken to remove her to Johnny.' },
+    { id: 'a37', date: '2025-06-13', type: 'Inspection', hive: 'Hive 4 - Carly', strength: 82, queenSeen: true, broodSpotted: true, notes: 'Queen and 4 shakes off bees taken to remove her to Johnny.' },
     // Jun 3
-    { date: '2025-06-03', type: 'Inspection', hive: 'Hive 1 - Obsidian', strength: 100, queenSeen: true, broodSpotted: true, notes: '2 Queen cells spotted and charged with some empty. Found, marked/clipped queen.' },
-    { date: '2025-06-03', type: 'Inspection', hive: 'Hive 2 - BMH', strength: 100, queenSeen: true, broodSpotted: true, notes: 'Doing well needs a super asap.' },
-    { date: '2025-06-03', type: 'Inspection', hive: 'Hive 5 - Survivor', strength: 100, queenSeen: true, broodSpotted: true, notes: 'Building out well on the plastic frames.' },
+    { id: 'a38', date: '2025-06-03', type: 'Inspection', hive: 'Hive 1 - Obsidian', strength: 100, queenSeen: true, broodSpotted: true, notes: '2 Queen cells spotted and charged with some empty. Found, marked/clipped queen.' },
+    { id: 'a39', date: '2025-06-03', type: 'Inspection', hive: 'Hive 2 - BMH', strength: 100, queenSeen: true, broodSpotted: true, notes: 'Doing well needs a super asap.' },
+    { id: 'a40', date: '2025-06-03', type: 'Inspection', hive: 'Hive 5 - Survivor', strength: 100, queenSeen: true, broodSpotted: true, notes: 'Building out well on the plastic frames.' },
   ];
 }
 
@@ -392,6 +392,12 @@ export function deleteNote(id) {
   const notes = loadNotes();
   const n = notes.find(x => x.id === id);
   if (n) { n.deleted = true; saveNotes(notes); }
+}
+
+export function editNote(id, newText) {
+  const notes = loadNotes();
+  const n = notes.find(x => x.id === id);
+  if (n) { n.text = newText; n.date = new Date().toISOString().slice(0, 10); saveNotes(notes); }
 }
 
 export function addNote(text, hiveId = null) {

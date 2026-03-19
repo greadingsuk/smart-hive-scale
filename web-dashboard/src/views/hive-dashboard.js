@@ -207,9 +207,8 @@ export async function renderHiveDashboard(app, params) {
         <h3 class="font-serif text-base font-medium text-hive-text mb-3">Inspection History</h3>
         <div class="space-y-0">
           ${activity.map((a, i) => {
-            const globalIdx = getAllActivity().indexOf(a);
             return `
-            <a href="#/inspection/${globalIdx}?from=${encodeURIComponent(hiveName)}" class="flex gap-3 ${i < activity.length - 1 ? 'pb-4' : ''} block">
+            <a href="#/inspection/${a.id || i}?from=${encodeURIComponent(hiveName)}" class="flex gap-3 ${i < activity.length - 1 ? 'pb-4' : ''} block">
               <div class="flex flex-col items-center">
                 <div class="timeline-dot" style="background: rgba(212,175,55,0.1); color: var(--hive-gold)">
                   <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
