@@ -2,86 +2,18 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Smart Hive Scale — Dashboard</title>
-    <link rel="stylesheet" href="style.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Apiary AI</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/src/style.css">
 </head>
-<body>
-    <header>
-        <div class="header-content">
-            <h1>&#127855; Smart Hive Scale</h1>
-            <div class="controls">
-                <select id="timeRange" aria-label="Time range">
-                    <option value="6">Last 6 hours</option>
-                    <option value="24" selected>Last 24 hours</option>
-                    <option value="72">Last 3 days</option>
-                    <option value="168">Last 7 days</option>
-                    <option value="720">Last 30 days</option>
-                </select>
-                <button id="refreshBtn" aria-label="Refresh data">&#8635; Refresh</button>
-            </div>
-        </div>
-    </header>
-
-    <main>
-        <section class="summary-cards" id="summaryCards">
-            <div class="card">
-                <span class="card-label">Weight</span>
-                <span class="card-value" id="latestWeight">—</span>
-                <span class="card-unit">kg</span>
-            </div>
-            <div class="card">
-                <span class="card-label">Internal Temp</span>
-                <span class="card-value" id="latestInternalTemp">—</span>
-                <span class="card-unit">°C</span>
-            </div>
-            <div class="card">
-                <span class="card-label">Humidity</span>
-                <span class="card-value" id="latestHiveHum">—</span>
-                <span class="card-unit">%</span>
-            </div>
-            <div class="card">
-                <span class="card-label">Battery</span>
-                <span class="card-value" id="latestBattery">—</span>
-                <span class="card-unit">V</span>
-            </div>
-            <div class="card">
-                <span class="card-label">Leg Temp</span>
-                <span class="card-value" id="latestLegTemp">—</span>
-                <span class="card-unit">°C</span>
-            </div>
-            <div class="card card-meta">
-                <span class="card-label">Last Reading</span>
-                <span class="card-value" id="lastReading">—</span>
-                <span class="card-unit" id="dataPoints">0 points</span>
-            </div>
-        </section>
-
-        <section class="chart-container">
-            <h2>Weight</h2>
-            <canvas id="weightChart"></canvas>
-        </section>
-
-        <section class="chart-row">
-            <div class="chart-container half">
-                <h2>Temperature</h2>
-                <canvas id="tempChart"></canvas>
-            </div>
-            <div class="chart-container half">
-                <h2>Humidity &amp; Battery</h2>
-                <canvas id="envChart"></canvas>
-            </div>
-        </section>
-
-        <div id="errorBanner" class="error-banner hidden" role="alert"></div>
-    </main>
-
-    <footer>
-        <p>Smart Hive Scale &mdash; Telemetry Dashboard &mdash; Auto-refreshes every 5 minutes</p>
-    </footer>
-
-    <script src="app.js"></script>
+<body class="bg-hive-bg text-hive-text min-h-screen font-sans antialiased">
+    <div class="grain-overlay" aria-hidden="true"></div>
+    <div id="app"></div>
+    <script type="module" src="/src/main.js"></script>
 </body>
 </html>

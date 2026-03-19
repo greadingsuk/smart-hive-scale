@@ -14,3 +14,11 @@ Thumbs.db
 # IDE
 .vscode/
 *.swp
+
+# PlatformIO build artifacts
+firmware/.pio/
+firmware/.pioenvs/
+firmware/.piolibdeps/
+
+# Firmware secrets — NEVER commit
+firmware/src/config.h

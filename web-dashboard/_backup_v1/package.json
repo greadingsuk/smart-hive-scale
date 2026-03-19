@@ -1,0 +1,8 @@
+{
+  "name": "hivescale-dashboard",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "start": "npx serve -s . -l 8080"
+  }
+}
