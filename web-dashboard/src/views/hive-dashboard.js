@@ -31,6 +31,23 @@ export async function renderHiveDashboard(app, params) {
   const daysSinceInsp = lastInspDate ? Math.floor((new Date() - lastInspDate) / 86400000) : null;
   const hiveNote = getHiveNote(hive.id);
 
+  // Queen age in years, months, days
+  let queenAgeDisplay = '—';
+  if (hive.queenAddedDate) {
+    const qa = new Date(hive.queenAddedDate);
+    const now = new Date();
+    let years = now.getFullYear() - qa.getFullYear();
+    let months = now.getMonth() - qa.getMonth();
+    let days = now.getDate() - qa.getDate();
+    if (days < 0) { months--; days += new Date(now.getFullYear(), now.getMonth(), 0).getDate(); }
+    if (months < 0) { years--; months += 12; }
+    const parts = [];
+    if (years > 0) parts.push(`${years}y`);
+    if (months > 0) parts.push(`${months}m`);
+    parts.push(`${days}d`);
+    queenAgeDisplay = parts.join(' ');
+  }
+
   app.innerHTML = `
     ${renderHeader(hive.hiveName, true)}
 
@@ -102,8 +119,8 @@ export async function renderHiveDashboard(app, params) {
         </div>
       </section>
 
-      <!-- Info Grid -->
-      <section class="px-4 grid grid-cols-2 gap-3 mb-4">
+      <!-- Stats Grid — 4 across -->
+      <section class="px-4 grid grid-cols-4 gap-3 mb-4">
         <a href="#/inspections" class="card-surface block">
           <div class="section-subtitle mb-2">Inspections</div>
           <span class="text-lg font-serif font-medium text-hive-text">${inspections.length}</span>
@@ -117,29 +134,41 @@ export async function renderHiveDashboard(app, params) {
         </div>
 
         <div class="card-surface">
-          <div class="section-subtitle mb-2">Weight</div>
-          <span class="text-sm text-hive-muted">Pending IoT</span>
-          <a href="#/apiary-dashboard" class="text-xs text-hive-gold block mt-1">View charts &rarr;</a>
+          <div class="section-subtitle mb-2">Queen Added</div>
+          <span class="text-sm text-hive-text">${hive.queenAddedDate ? new Date(hive.queenAddedDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'}</span>
         </div>
 
         <div class="card-surface">
-          <div class="section-subtitle mb-2">Added</div>
-          <span class="text-sm text-hive-text">${new Date(hive.dateAdded).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+          <div class="section-subtitle mb-2">Queen Age</div>
+          <span class="text-lg font-serif font-medium text-hive-text">${queenAgeDisplay}</span>
+          <span class="text-xs text-hive-muted block">${hive.queenYear ? `(${hive.queenYear})` : ''}</span>
         </div>
       </section>
 
-      <!-- Hive Note & Build Hive — same row -->
-      <section class="px-4 mb-4 grid grid-cols-2 gap-3">
+      <!-- Hive Note, Weight Graph, Build Hive — 3 across -->
+      <section class="px-4 mb-4 grid grid-cols-3 gap-3">
         <button id="editHiveNote" class="card-surface flex items-center justify-between p-4 text-left">
           <div class="flex items-center gap-3 min-w-0">
             <svg class="w-5 h-5 flex-shrink-0 ${hiveNote ? 'text-hive-gold' : 'text-hive-muted'}" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
             <div class="min-w-0">
               <div class="text-sm font-medium text-hive-text">Hive Note</div>
-              <div class="text-xs text-hive-muted truncate">${hiveNote ? hiveNote.text.slice(0, 30) + (hiveNote.text.length > 30 ? '…' : '') : 'Add a note'}</div>
+              <div class="text-xs text-hive-muted truncate">${hiveNote ? hiveNote.text.slice(0, 20) + (hiveNote.text.length > 20 ? '…' : '') : 'Add a note'}</div>
             </div>
           </div>
           <svg class="w-4 h-4 text-hive-muted flex-shrink-0" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
         </button>
+
+        <a href="#/apiary-dashboard" class="card-surface flex items-center justify-between p-4 block">
+          <div class="flex items-center gap-3">
+            <svg class="w-5 h-5 text-hive-gold" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z"/></svg>
+            <div>
+              <div class="text-sm font-medium text-hive-text">Weight</div>
+              <div class="text-xs text-hive-muted">View charts</div>
+            </div>
+          </div>
+          <svg class="w-4 h-4 text-hive-muted" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+        </a>
+
         <a href="#/build/${hive.id}" class="card-surface flex items-center justify-between p-4 block">
           <div class="flex items-center gap-3">
             <svg class="w-5 h-5 text-hive-gold" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11.42 15.17l-5.66-5.66a2 2 0 010-2.83l.71-.71a2 2 0 012.83 0l5.66 5.66m-8.49 8.49l-2.83-2.83a2 2 0 010-2.83l.71-.71a2 2 0 012.83 0l2.83 2.83"/></svg>
