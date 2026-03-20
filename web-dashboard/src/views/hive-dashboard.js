@@ -48,136 +48,106 @@ export async function renderHiveDashboard(app, params) {
     queenAgeDisplay = parts.join(' ');
   }
 
+  const queenColorHex = { Green: 'var(--hive-sage)', Pink: '#ec4899', Blue: 'var(--hive-blue)', Yellow: '#eab308', Red: 'var(--hive-red)', White: '#e5e7eb' };
+
   app.innerHTML = `
     ${renderHeader(hive.hiveName, true)}
 
     <main class="max-w-6xl mx-auto pb-24">
 
-      <!-- Hero Card -->
-      <section class="p-4">
-        <div class="rounded-2xl overflow-hidden" style="background: var(--hive-surface)">
-          <div class="flex items-center justify-center py-6">
-            ${renderHiveStack(hive.components || [], { size: 'md' })}
-          </div>
-          <!-- Strength bar under image, like HiveBloom -->
-          <div class="h-2 w-full" style="background: ${strengthColor}"></div>
-        </div>
-
-        <div class="mt-4 flex items-center justify-between">
-          <div>
-            <h2 class="text-xl font-bold text-hive-text">${hive.hiveName}</h2>
-            <div class="flex items-center gap-2 mt-2 flex-wrap">
-              <span class="pill-amber">${hive.beeType}</span>
-              <span class="${hive.type === 'Nuc' ? 'pill-blue' : 'pill-orange'}">${hive.type}</span>
-              ${hive.hiveStyle ? `<span class="pill-blue">${hive.hiveStyle}</span>` : ''}
-              <span class="pill-green">${hive.status}</span>
-              <a href="#/hive-form/${hive.id}" class="pill text-xs bg-hive-surface text-hive-muted hover:text-hive-amber">+ Edit</a>
+      <!-- Hero Card — compact header -->
+      <section class="px-4 pt-4 pb-2">
+        <div class="card p-5">
+          <div class="flex items-start justify-between">
+            <div class="flex-1">
+              <div class="flex items-center gap-3 mb-2">
+                <h2 class="font-serif text-xl font-bold text-hive-text">${hive.hiveName}</h2>
+                <div class="flex items-center gap-1.5">
+                  <span class="text-2xl font-bold" style="color:${strengthColor}">${hive.strength}%</span>
+                  <span class="text-[10px] text-hive-muted uppercase tracking-wider">Strength</span>
+                </div>
+              </div>
+              <div class="flex items-center gap-2 flex-wrap">
+                <span class="pill-amber">${hive.beeType}</span>
+                <span class="${hive.type === 'Nuc' ? 'pill-blue' : 'pill-orange'}">${hive.type}</span>
+                ${hive.hiveStyle ? `<span class="pill-blue">${hive.hiveStyle}</span>` : ''}
+                <span class="pill-green">${hive.status}</span>
+                <a href="#/hive-form/${hive.id}" class="pill text-xs bg-hive-surface text-hive-muted hover:text-hive-amber">Edit</a>
+              </div>
             </div>
-          </div>
-          <div class="text-right">
-            <div class="text-3xl font-bold" style="color: ${strengthColor}">${hive.strength}%</div>
-            <div class="text-xs text-hive-muted">Strength</div>
           </div>
         </div>
       </section>
 
-      <!-- Queen Detail Card -->
-      <section class="px-4 mb-4">
-        <div class="card-surface">
-          <div class="flex items-center justify-between mb-3">
-            <div class="section-subtitle">Queen Details</div>
-            <a href="#/hive-form/${hive.id}" class="text-[10px] uppercase tracking-wider text-hive-gold hover:opacity-80" style="font-family:Inter,sans-serif">Edit</a>
-          </div>
-          <div class="grid grid-cols-2 gap-x-4 gap-y-2">
+      <!-- Two-panel: Queen Profile + Hive Metrics -->
+      <section class="px-4 mb-4 grid grid-cols-1 md:grid-cols-2 gap-3">
+
+        <!-- Queen Profile -->
+        <div class="card p-5">
+          <div class="section-subtitle mb-3">Queen Profile</div>
+          <div class="space-y-2.5">
             <div class="flex items-center gap-2">
               ${hive.queenMarked
-                ? `<span class="w-3 h-3 rounded-full flex-shrink-0" style="background: ${hive.queenColor === 'Green' ? 'var(--hive-sage)' : hive.queenColor === 'Pink' ? '#ec4899' : hive.queenColor === 'Blue' ? 'var(--hive-blue)' : hive.queenColor === 'Yellow' ? '#eab308' : hive.queenColor === 'Red' ? 'var(--hive-red)' : hive.queenColor === 'White' ? '#e5e7eb' : 'var(--hive-muted)'}"></span><span class="text-sm text-hive-text">${hive.queenColor} marked</span>`
-                : '<span class="text-sm text-hive-muted">Unmarked</span>'
-              }
+                ? `<span class="w-2.5 h-2.5 rounded-full flex-shrink-0" style="background:${queenColorHex[hive.queenColor] || 'var(--hive-muted)'}"></span><span class="text-sm text-hive-text">${hive.queenColor} Marked</span>`
+                : '<span class="text-sm text-hive-muted">Unmarked</span>'}
+              ${hive.queenClipped ? '<span class="text-sm text-hive-muted ml-2">&middot; Clipped</span>' : ''}
             </div>
-            <div class="text-sm">
-              ${hive.queenClipped ? '<span class="text-hive-text">Clipped</span>' : '<span class="text-hive-muted">Not clipped</span>'}
+            <div class="flex gap-4">
+              <div><span class="text-[11px] text-hive-muted block">Breed</span><span class="text-sm text-hive-text">${hive.beeType}</span></div>
+              <div><span class="text-[11px] text-hive-muted block">Source</span><span class="text-sm text-hive-text">${hive.queenSource || '—'}</span></div>
             </div>
-            <div>
-              <span class="text-xs text-hive-muted">Age</span>
-              <div class="text-sm text-hive-text">${queenAge !== null ? `${queenAge}yr (${hive.queenYear})` : 'Unknown'}</div>
+            ${hive.queenAddedDate ? `
+            <div class="pt-2 border-t" style="border-color:var(--hive-border)">
+              <div class="text-[11px] text-hive-muted uppercase tracking-wider mb-1">Queen Timeline</div>
+              <div class="text-sm text-hive-text">Added: ${new Date(hive.queenAddedDate).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' })}</div>
+              <div class="text-sm text-hive-text">Age: ${queenAgeDisplay}${hive.queenYear ? ` (${hive.queenYear})` : ''}</div>
+            </div>` : ''}
+            ${hive.queenNotes ? `<p class="text-xs text-hive-muted italic pt-1">${hive.queenNotes}</p>` : ''}
+          </div>
+        </div>
+
+        <!-- Hive Metrics + Visual -->
+        <div class="card p-5">
+          <div class="section-subtitle mb-3">Hive Metrics</div>
+          <div class="flex gap-4">
+            <div class="flex-1 space-y-3">
+              <div class="flex items-center gap-2.5">
+                <svg class="w-4 h-4 text-hive-muted flex-shrink-0" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5"/></svg>
+                <span class="text-sm text-hive-text">Added: ${new Date(hive.dateAdded).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' })}</span>
+              </div>
+              <div class="flex items-center gap-2.5">
+                <svg class="w-4 h-4 text-hive-muted flex-shrink-0" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/></svg>
+                <span class="text-sm text-hive-text">${inspections.length} Inspections <span class="text-hive-muted">(Since Jun 2025)</span></span>
+              </div>
+              <div class="flex items-center gap-2.5">
+                <svg class="w-4 h-4 flex-shrink-0 ${daysSinceInsp !== null && daysSinceInsp > 10 ? 'text-hive-red' : 'text-hive-muted'}" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                <span class="text-sm ${daysSinceInsp !== null && daysSinceInsp > 10 ? 'text-hive-red' : 'text-hive-text'}">Last Activity: ${daysSinceInsp !== null ? daysSinceInsp : '—'} Days${lastInspDate ? ` (${lastInspDate.toLocaleDateString('en-GB', {day:'numeric',month:'short'})})` : ''}</span>
+              </div>
             </div>
-            <div>
-              <span class="text-xs text-hive-muted">Source</span>
-              <div class="text-sm text-hive-text">${hive.queenSource || 'Unknown'}</div>
-            </div>
-            <div>
-              <span class="text-xs text-hive-muted">Added</span>
-              <div class="text-sm text-hive-text">${hive.queenAddedDate ? new Date(hive.queenAddedDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'}</div>
-            </div>
-            <div>
-              <span class="text-xs text-hive-muted">Breed</span>
-              <div class="text-sm text-hive-text">${hive.beeType}</div>
+            <!-- Embedded hive visual -->
+            <div class="flex-shrink-0 hidden sm:flex items-end">
+              ${renderHiveStack(hive.components || [], { size: 'sm' })}
             </div>
           </div>
-          ${hive.queenNotes ? `<div class="mt-3 pt-2 border-t" style="border-color:var(--hive-border)"><p class="text-xs text-hive-muted italic">${hive.queenNotes}</p></div>` : ''}
         </div>
       </section>
 
-      <!-- Stats Grid — 4 across -->
-      <section class="px-4 grid grid-cols-4 gap-3 mb-4">
-        <a href="#/inspections" class="card-surface block">
-          <div class="section-subtitle mb-2">Inspections</div>
-          <span class="text-lg font-serif font-medium text-hive-text">${inspections.length}</span>
-          <span class="text-xs text-hive-muted block">since Jun 2025</span>
-        </a>
-
-        <div class="card-surface">
-          <div class="section-subtitle mb-2">Days Since</div>
-          <span class="text-lg font-serif font-medium ${daysSinceInsp !== null && daysSinceInsp > 10 ? 'text-hive-red' : 'text-hive-text'}">${daysSinceInsp !== null ? daysSinceInsp : '—'}</span>
-          <span class="text-xs text-hive-muted block">${lastInspDate ? lastInspDate.toLocaleDateString('en-GB', {day:'numeric',month:'short'}) : 'No inspections'}</span>
-        </div>
-
-        <div class="card-surface">
-          <div class="section-subtitle mb-2">Queen Added</div>
-          <span class="text-sm text-hive-text">${hive.queenAddedDate ? new Date(hive.queenAddedDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'}</span>
-        </div>
-
-        <div class="card-surface">
-          <div class="section-subtitle mb-2">Queen Age</div>
-          <span class="text-lg font-serif font-medium text-hive-text">${queenAgeDisplay}</span>
-          <span class="text-xs text-hive-muted block">${hive.queenYear ? `(${hive.queenYear})` : ''}</span>
-        </div>
-      </section>
-
-      <!-- Hive Note, Weight Graph, Build Hive — 3 across -->
+      <!-- Action Buttons — 3 across -->
       <section class="px-4 mb-4 grid grid-cols-3 gap-3">
-        <button id="editHiveNote" class="card-surface flex items-center justify-between p-4 text-left">
-          <div class="flex items-center gap-3 min-w-0">
-            <svg class="w-5 h-5 flex-shrink-0 ${hiveNote ? 'text-hive-gold' : 'text-hive-muted'}" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
-            <div class="min-w-0">
-              <div class="text-sm font-medium text-hive-text">Hive Note</div>
-              <div class="text-xs text-hive-muted truncate">${hiveNote ? hiveNote.text.slice(0, 20) + (hiveNote.text.length > 20 ? '…' : '') : 'Add a note'}</div>
-            </div>
-          </div>
-          <svg class="w-4 h-4 text-hive-muted flex-shrink-0" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+        <button id="editHiveNote" class="card p-4 flex flex-col items-center gap-2 text-center hover:border-hive-gold/30 transition-colors">
+          <svg class="w-8 h-8 ${hiveNote ? 'text-hive-gold' : 'text-hive-muted'}" fill="none" stroke="currentColor" stroke-width="1.25" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+          <div class="text-xs font-semibold text-hive-text uppercase tracking-wider">Hive Notes</div>
+          <div class="text-[10px] text-hive-muted">${hiveNote ? 'View / Edit' : 'Add Note'}</div>
         </button>
-
-        <a href="#/apiary-dashboard" class="card-surface flex items-center justify-between p-4 block">
-          <div class="flex items-center gap-3">
-            <svg class="w-5 h-5 text-hive-gold" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z"/></svg>
-            <div>
-              <div class="text-sm font-medium text-hive-text">Weight</div>
-              <div class="text-xs text-hive-muted">View charts</div>
-            </div>
-          </div>
-          <svg class="w-4 h-4 text-hive-muted" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+        <a href="#/apiary-dashboard" class="card p-4 flex flex-col items-center gap-2 text-center hover:border-hive-gold/30 transition-colors">
+          <svg class="w-8 h-8 text-hive-gold" fill="none" stroke="currentColor" stroke-width="1.25" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z"/></svg>
+          <div class="text-xs font-semibold text-hive-text uppercase tracking-wider">Weight Tracking</div>
+          <div class="text-[10px] text-hive-muted">Analyze Charts</div>
         </a>
-
-        <a href="#/build/${hive.id}" class="card-surface flex items-center justify-between p-4 block">
-          <div class="flex items-center gap-3">
-            <svg class="w-5 h-5 text-hive-gold" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11.42 15.17l-5.66-5.66a2 2 0 010-2.83l.71-.71a2 2 0 012.83 0l5.66 5.66m-8.49 8.49l-2.83-2.83a2 2 0 010-2.83l.71-.71a2 2 0 012.83 0l2.83 2.83"/></svg>
-            <div>
-              <div class="text-sm font-medium text-hive-text">Build Hive</div>
-              <div class="text-xs text-hive-muted">${(hive.components || []).length} components</div>
-            </div>
-          </div>
-          <svg class="w-4 h-4 text-hive-muted" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+        <a href="#/build/${hive.id}" class="card p-4 flex flex-col items-center gap-2 text-center hover:border-hive-gold/30 transition-colors">
+          <svg class="w-8 h-8 text-hive-gold" fill="none" stroke="currentColor" stroke-width="1.25" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11.42 15.17l-5.66-5.66a2 2 0 010-2.83l.71-.71a2 2 0 012.83 0l5.66 5.66m-8.49 8.49l-2.83-2.83a2 2 0 010-2.83l.71-.71a2 2 0 012.83 0l2.83 2.83"/></svg>
+          <div class="text-xs font-semibold text-hive-text uppercase tracking-wider">Hive Build</div>
+          <div class="text-[10px] text-hive-muted">Components: ${(hive.components || []).length}</div>
         </a>
       </section>
 
