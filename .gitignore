@@ -22,3 +22,11 @@ firmware/.piolibdeps/
 
 # Firmware secrets — NEVER commit
 firmware/src/config.h
+
+# Built output — built in CI, never commit
+web-dashboard/dist/
+
+# Environment files with secrets
+.env.local
+*.env.local
+web-dashboard/.env.local
