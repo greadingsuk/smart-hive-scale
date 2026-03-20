@@ -88,36 +88,37 @@ export async function renderHiveDashboard(app, params) {
             <div class="section-subtitle">Queen Profile</div>
             <a href="#/hive-form/${hive.id}" class="text-[10px] uppercase tracking-wider text-hive-gold hover:opacity-80" style="font-family:Inter,sans-serif">Edit</a>
           </div>
-          <div class="flex gap-4">
-            <div class="flex-shrink-0">
-              <div class="relative w-20 h-20 rounded-xl overflow-hidden" style="background:var(--hive-bg);border:2px dashed var(--hive-border)">
-                ${hive.queenImage
-                  ? `<img src="${hive.queenImage}" class="w-full h-full object-cover" alt="Queen">`
-                  : `<div class="w-full h-full flex flex-col items-center justify-center text-hive-muted"><svg class="w-7 h-7 mb-0.5 opacity-40" fill="none" stroke="currentColor" stroke-width="1" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z"/><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0z"/></svg><span class="text-[8px] uppercase tracking-wider opacity-40">Photo</span></div>`}
-                <button id="queenImageBtn" class="absolute bottom-0.5 right-0.5 w-5 h-5 rounded-full flex items-center justify-center shadow-sm" style="background:var(--hive-gold);color:#0B0D0E"><svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z"/></svg></button>
-              </div>
-              <input type="file" id="queenImageInput" accept="image/*" capture="environment" class="hidden">
-            </div>
-            <div class="flex-1 space-y-2">
+          <div class="grid grid-cols-2 gap-4">
+            <div class="space-y-3">
               <div class="flex items-center gap-2">
                 ${hive.queenMarked
                   ? `<span class="w-2.5 h-2.5 rounded-full flex-shrink-0" style="background:${queenColorHex[hive.queenColor] || 'var(--hive-muted)'}"></span><span class="text-sm text-hive-text">${hive.queenColor} Marked</span>`
                   : '<span class="text-sm text-hive-muted">Unmarked</span>'}
                 ${hive.queenClipped ? '<span class="text-sm text-hive-muted ml-1">&middot; Clipped</span>' : ''}
               </div>
-              <div class="flex gap-4">
-                <div><span class="text-[11px] text-hive-muted block">Breed</span><span class="text-sm text-hive-text">${hive.beeType}</span></div>
-                <div><span class="text-[11px] text-hive-muted block">Source</span><span class="text-sm text-hive-text">${hive.queenSource || '\u2014'}</span></div>
+              <div class="flex items-center gap-2.5">
+                <span class="text-[11px] text-hive-muted">Breed:</span><span class="text-sm text-hive-text">${hive.beeType}</span>
               </div>
+              <div class="flex items-center gap-2.5">
+                <span class="text-[11px] text-hive-muted">Source:</span><span class="text-sm text-hive-text">${hive.queenSource || '\u2014'}</span>
+              </div>
+              ${hive.queenAddedDate ? `<div>
+                <div class="text-sm text-hive-text">Added: ${new Date(hive.queenAddedDate).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' })}</div>
+                <div class="text-sm text-hive-text">Age: ${queenAgeDisplay}${hive.queenYear ? ` (${hive.queenYear})` : ''}</div>
+              </div>` : ''}
+              ${hive.queenNotes ? `<p class="text-xs text-hive-muted italic">${hive.queenNotes}</p>` : ''}
+            </div>
+            <!-- Queen Image \u2014 large, right side -->
+            <div class="flex items-center justify-center rounded-xl py-3" style="background:var(--hive-bg)">
+              <div class="relative w-28 h-28 rounded-xl overflow-hidden" style="border:2px dashed var(--hive-border)">
+                ${hive.queenImage
+                  ? `<img src="${hive.queenImage}" class="w-full h-full object-cover" alt="Queen">`
+                  : `<div class="w-full h-full flex flex-col items-center justify-center text-hive-muted"><svg class="w-10 h-10 mb-1 opacity-30" fill="none" stroke="currentColor" stroke-width="1" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z"/><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0z"/></svg><span class="text-[9px] uppercase tracking-wider opacity-30">Queen Photo</span></div>`}
+                <button id="queenImageBtn" class="absolute bottom-1 right-1 w-6 h-6 rounded-full flex items-center justify-center shadow-sm" style="background:var(--hive-gold);color:#0B0D0E"><svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z"/></svg></button>
+              </div>
+              <input type="file" id="queenImageInput" accept="image/*" capture="environment" class="hidden">
             </div>
           </div>
-          ${hive.queenAddedDate ? `
-          <div class="mt-3 pt-2 border-t" style="border-color:var(--hive-border)">
-            <div class="text-[11px] text-hive-muted uppercase tracking-wider mb-1">Queen Timeline</div>
-            <div class="text-sm text-hive-text">Added: ${new Date(hive.queenAddedDate).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' })}</div>
-            <div class="text-sm text-hive-text">Age: ${queenAgeDisplay}${hive.queenYear ? ` (${hive.queenYear})` : ''}</div>
-          </div>` : ''}
-          ${hive.queenNotes ? `<p class="text-xs text-hive-muted italic pt-1">${hive.queenNotes}</p>` : ''}
         </div>
 
         <!-- Hive Metrics + Visual -->

@@ -38,16 +38,15 @@ export async function initDataStore() {
 export function isDataLoaded() { return _dataLoaded; }
 
 async function fetchEntity(entity) {
-  if (APIARY_READ_URL.includes('%%')) { console.warn(`Read flow not configured for ${entity}`); return []; }
-  const url = new URL(APIARY_READ_URL);
-  url.searchParams.set('entity', entity);
-  const res = await fetch(url.toString());
+  if (!APIARY_READ_URL || APIARY_READ_URL.includes('%%')) { console.warn(`Read flow not configured for ${entity}`); return []; }
+  const sep = APIARY_READ_URL.includes('?') ? '&' : '?';
+  const res = await fetch(`${APIARY_READ_URL}${sep}entity=${entity}`);
   if (!res.ok) throw new Error(`Read ${entity}: HTTP ${res.status}`);
   return res.json();
 }
 
 async function writeEntity(entity, operation, data, id) {
-  if (APIARY_WRITE_URL.includes('%%')) { console.warn(`Write flow not configured`); return null; }
+  if (!APIARY_WRITE_URL || APIARY_WRITE_URL.includes('%%')) { console.warn(`Write flow not configured`); return null; }
   const res = await fetch(APIARY_WRITE_URL, {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ entity, operation, data, id }),
