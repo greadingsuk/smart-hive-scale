@@ -21,7 +21,7 @@ function isNucHive(components) {
 
 /** Map nuc component heights to full-hive equivalents so nucs render at same height */
 function getFullHiveHeight(def) {
-  const map = { 'nuc-roof': 14, 'nuc-floor': 10, 'nuc-stand': 22, 'nuc-brood': 45, 'nuc-super': 30, 'nuc-eke': 18 };
+  const map = { 'nuc-roof': 14, 'nuc-floor': 10, 'nuc-stand': 34, 'nuc-stand-iot': 38, 'nuc-brood': 45, 'nuc-super': 30, 'nuc-eke': 18 };
   return map[def.id] || def.height;
 }
 
@@ -49,7 +49,8 @@ export function renderHiveStack(components = [], opts = {}) {
 
     const h = Math.round(def.height * scale);
     const isRoof = def.id.includes('roof');
-    const isStand = def.id.includes('stand');
+    const isStandIot = def.id.includes('stand-iot');
+    const isStand = !isStandIot && def.id.includes('stand');
     const isFloor = def.id.includes('floor');
     const isAccessory = def.category === 'accessory';
 
@@ -59,8 +60,22 @@ export function renderHiveStack(components = [], opts = {}) {
         <div class="absolute bottom-0 left-0.5 right-0.5 h-px" style="background:#991b1b"></div>
       </div>`;
     } else if (isFloor) {
-      html += `<div style="width:${boxWidth + Math.round(4 * scale)}px; height:${h}px; background:${def.color}; border-radius: 0 0 2px 2px"></div>`;
-    } else if (isStand) {
+      html += `<div style="width:${boxWidth + Math.round(4 * scale)}px; height:${h}px; background:${def.color}; border-radius: 0 0 2px 2px"></div>`;    } else if (isStandIot) {
+      // IOT stand — wider platform with green accent strip and signal indicator
+      const legW = Math.max(3, Math.round(4 * scale));
+      const platformH = Math.round(h * 0.28);
+      const legH = h - platformH;
+      html += `<div class=\"flex flex-col items-center\" style=\"width:${boxWidth + Math.round(16 * scale)}px\">
+        <div class=\"relative\" style=\"width:${boxWidth + Math.round(12 * scale)}px; height:${platformH}px; background:${def.color}; border-radius: 0 0 3px 3px\">
+          <div style=\"position:absolute;bottom:0;left:0;right:0;height:3px;background:#22c55e;border-radius:0 0 3px 3px\"></div>
+          <div style=\"position:absolute;top:-${Math.round(6*scale)}px;right:${Math.round(8*scale)}px;width:2px;height:${Math.round(8*scale)}px;background:#22c55e;border-radius:1px\"></div>
+          <div style=\"position:absolute;top:-${Math.round(8*scale)}px;right:${Math.round(5*scale)}px;width:${Math.round(6*scale)}px;height:${Math.round(6*scale)}px;border:2px solid #22c55e;border-radius:50%;background:transparent\"></div>
+        </div>
+        <div class=\"flex justify-between\" style=\"width:${boxWidth + Math.round(12 * scale)}px; height:${legH}px\">
+          <div style=\"width:${legW}px; background:#A09080; height:${legH}px; border-radius: 0 0 2px 2px\"></div>
+          <div style=\"width:${legW}px; background:#A09080; height:${legH}px; border-radius: 0 0 2px 2px\"></div>
+        </div>
+      </div>`;    } else if (isStand) {
       const legW = Math.max(2, Math.round(3 * scale));
       html += `<div class="flex justify-between" style="width:${boxWidth + Math.round(12 * scale)}px; height:${h}px">
         <div style="width:${legW}px; background:${def.color}; height:${h}px; border-radius: 0 0 2px 2px"></div>
@@ -115,6 +130,16 @@ export function renderHiveThumb(components = [], color = '#f59e0b') {
 
     if (def.id.includes('roof')) {
       html += `<div class="rounded-t" style="width:${boxWidth + 3}px; height:${h}px; background:${def.color}"></div>`;
+    } else if (def.id.includes('stand-iot')) {
+      html += `<div class="flex flex-col items-center" style="width:${boxWidth + 8}px">
+        <div class="relative" style="width:${boxWidth + 6}px; height:${Math.round(h * 0.3)}px; background:#5B7A5E">
+          <div style="position:absolute;bottom:0;left:0;right:0;height:1px;background:#22c55e"></div>
+        </div>
+        <div class="flex justify-between" style="width:${boxWidth + 6}px; height:${h - Math.round(h * 0.3)}px">
+          <div style="width:1px; background:#A09080; height:100%"></div>
+          <div style="width:1px; background:#A09080; height:100%"></div>
+        </div>
+      </div>`;
     } else if (def.id.includes('stand')) {
       html += `<div class="flex justify-between" style="width:${boxWidth + 6}px; height:${h}px">
         <div style="width:1px; background:${def.color}; height:${h}px"></div>

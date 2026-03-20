@@ -31,9 +31,7 @@ export function renderHiveBuilder(app, params) {
           <div class="space-y-2">
             ${COMPONENT_TYPES.filter(c => {
               const isNucHive = hive.type === 'Nuc';
-              if (c.nuc !== isNucHive) return false;
-              if (c.id.includes('roof') || c.id.includes('stand') || c.id.includes('floor')) return false;
-              return true;
+              return c.nuc === isNucHive;
             }).map(c => `
               <button data-add-type="${c.id}" class="w-full flex items-center justify-between p-3 rounded-lg hover:bg-hive-surface-hover transition-colors border border-hive-border">
                 <div class="flex items-center gap-3">
