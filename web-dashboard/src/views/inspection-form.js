@@ -2,15 +2,8 @@
  * Inspection Form — luxury heritage design with progressive disclosure.
  */
 import { renderHeader, accordion, initAccordions, ICON } from '../components/ui.js';
-import { getHives, APIARY } from '../api/dataverse.js';
+import { getHives, APIARY, saveInspection } from '../api/dataverse.js';
 import { fetchCurrentWeather } from '../api/weather.js';
-
-const ACTIVITY_KEY = 'apiary_activity';
-function saveInspection(data) {
-  const all = JSON.parse(localStorage.getItem(ACTIVITY_KEY) || '[]');
-  all.unshift(data);
-  localStorage.setItem(ACTIVITY_KEY, JSON.stringify(all));
-}
 
 function showToast(message, duration = 3000) {
   const existing = document.getElementById('toast');

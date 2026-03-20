@@ -5,6 +5,7 @@ import './style.css';
 import { registerRoute, initRouter } from './router.js';
 import { initTheme, wireThemeToggle } from './theme.js';
 import { initHexCorners } from './components/hex-corners.js';
+import { initDataStore } from './api/dataverse.js';
 import { renderLogin } from './views/login.js';
 import { renderApiary } from './views/apiary.js';
 import { renderHiveDashboard } from './views/hive-dashboard.js';
@@ -41,6 +42,8 @@ registerRoute('#/inspection/:id', renderInspectionDetail);
 // Wire theme toggle after each route change
 window.addEventListener('hashchange', () => setTimeout(wireThemeToggle, 50));
 
-// Start router
-initRouter('#/login');
-setTimeout(wireThemeToggle, 100);
+// Load data from Dataverse, then start router
+initDataStore().then(() => {
+  initRouter('#/login');
+  setTimeout(wireThemeToggle, 100);
+});
