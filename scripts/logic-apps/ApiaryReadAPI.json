@@ -1,0 +1,134 @@
+{
+  "definition": {
+    "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+      "dataverseUrl": { "type": "String", "defaultValue": "https://orgc5731d44.crm.dynamics.com" },
+      "clientId": { "type": "String" },
+      "clientSecret": { "type": "SecureString" },
+      "tenantId": { "type": "String" }
+    },
+    "triggers": {
+      "manual": {
+        "type": "Request",
+        "kind": "Http",
+        "inputs": {
+          "method": "GET",
+          "schema": {}
+        },
+        "operationOptions": "EnableSchemaValidation"
+      }
+    },
+    "actions": {
+      "Parse_Entity": {
+        "type": "InitializeVariable",
+        "inputs": {
+          "variables": [{ "name": "entity", "type": "string", "value": "@{triggerOutputs()['queries']?['entity']}" }]
+        },
+        "runAfter": {}
+      },
+      "Route_By_Entity": {
+        "type": "Switch",
+        "expression": "@variables('entity')",
+        "cases": {
+          "hives": {
+            "case": "hives",
+            "actions": {
+              "Get_Hives": {
+                "type": "Http",
+                "inputs": {
+                  "method": "GET",
+                  "uri": "@{parameters('dataverseUrl')}/api/data/v9.2/gr_hives?$orderby=gr_name",
+                  "headers": { "Accept": "application/json", "OData-MaxVersion": "4.0", "OData-Version": "4.0", "Prefer": "odata.maxpagesize=5000" },
+                  "authentication": { "type": "ActiveDirectoryOAuth", "tenant": "@parameters('tenantId')", "audience": "@parameters('dataverseUrl')", "clientId": "@parameters('clientId')", "secret": "@parameters('clientSecret')" }
+                },
+                "runAfter": {}
+              },
+              "Response_Hives": {
+                "type": "Response",
+                "kind": "Http",
+                "inputs": { "statusCode": 200, "headers": { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }, "body": "@body('Get_Hives')?['value']" },
+                "runAfter": { "Get_Hives": ["Succeeded"] }
+              }
+            }
+          },
+          "inspections": {
+            "case": "inspections",
+            "actions": {
+              "Get_Inspections": {
+                "type": "Http",
+                "inputs": {
+                  "method": "GET",
+                  "uri": "@{parameters('dataverseUrl')}/api/data/v9.2/gr_inspections?$orderby=gr_activitydate desc&$top=5000",
+                  "headers": { "Accept": "application/json", "OData-MaxVersion": "4.0", "OData-Version": "4.0", "Prefer": "odata.maxpagesize=5000" },
+                  "authentication": { "type": "ActiveDirectoryOAuth", "tenant": "@parameters('tenantId')", "audience": "@parameters('dataverseUrl')", "clientId": "@parameters('clientId')", "secret": "@parameters('clientSecret')" }
+                },
+                "runAfter": {}
+              },
+              "Response_Inspections": {
+                "type": "Response",
+                "kind": "Http",
+                "inputs": { "statusCode": 200, "headers": { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }, "body": "@body('Get_Inspections')?['value']" },
+                "runAfter": { "Get_Inspections": ["Succeeded"] }
+              }
+            }
+          },
+          "notes": {
+            "case": "notes",
+            "actions": {
+              "Get_Notes": {
+                "type": "Http",
+                "inputs": {
+                  "method": "GET",
+                  "uri": "@{parameters('dataverseUrl')}/api/data/v9.2/gr_notes?$orderby=gr_notedate desc",
+                  "headers": { "Accept": "application/json", "OData-MaxVersion": "4.0", "OData-Version": "4.0", "Prefer": "odata.maxpagesize=5000" },
+                  "authentication": { "type": "ActiveDirectoryOAuth", "tenant": "@parameters('tenantId')", "audience": "@parameters('dataverseUrl')", "clientId": "@parameters('clientId')", "secret": "@parameters('clientSecret')" }
+                },
+                "runAfter": {}
+              },
+              "Response_Notes": {
+                "type": "Response",
+                "kind": "Http",
+                "inputs": { "statusCode": 200, "headers": { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }, "body": "@body('Get_Notes')?['value']" },
+                "runAfter": { "Get_Notes": ["Succeeded"] }
+              }
+            }
+          },
+          "tasks": {
+            "case": "tasks",
+            "actions": {
+              "Get_Tasks": {
+                "type": "Http",
+                "inputs": {
+                  "method": "GET",
+                  "uri": "@{parameters('dataverseUrl')}/api/data/v9.2/gr_tasks?$orderby=gr_duedate",
+                  "headers": { "Accept": "application/json", "OData-MaxVersion": "4.0", "OData-Version": "4.0", "Prefer": "odata.maxpagesize=5000" },
+                  "authentication": { "type": "ActiveDirectoryOAuth", "tenant": "@parameters('tenantId')", "audience": "@parameters('dataverseUrl')", "clientId": "@parameters('clientId')", "secret": "@parameters('clientSecret')" }
+                },
+                "runAfter": {}
+              },
+              "Response_Tasks": {
+                "type": "Response",
+                "kind": "Http",
+                "inputs": { "statusCode": 200, "headers": { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }, "body": "@body('Get_Tasks')?['value']" },
+                "runAfter": { "Get_Tasks": ["Succeeded"] }
+              }
+            }
+          }
+        },
+        "default": {
+          "actions": {
+            "Response_BadEntity": {
+              "type": "Response",
+              "kind": "Http",
+              "inputs": { "statusCode": 400, "headers": { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }, "body": { "error": "Unknown entity. Use: hives, inspections, notes, tasks" } },
+              "runAfter": {}
+            }
+          }
+        },
+        "runAfter": { "Parse_Entity": ["Succeeded"] }
+      }
+    },
+    "outputs": {}
+  }
+}

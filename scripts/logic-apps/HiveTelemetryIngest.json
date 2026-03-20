@@ -1,0 +1,63 @@
+{
+  "definition": {
+    "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+      "dataverseUrl": { "type": "String", "defaultValue": "https://orgc5731d44.crm.dynamics.com" },
+      "clientId": { "type": "String" },
+      "clientSecret": { "type": "SecureString" },
+      "tenantId": { "type": "String" }
+    },
+    "triggers": {
+      "manual": {
+        "type": "Request",
+        "kind": "Http",
+        "inputs": {
+          "method": "POST",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "Weight": { "type": "number" },
+              "InternalTemp": { "type": "number" },
+              "BatteryVoltage": { "type": "number" },
+              "HiveHum": { "type": "number" },
+              "LegTemp": { "type": "number" }
+            }
+          }
+        }
+      }
+    },
+    "actions": {
+      "Create_Reading": {
+        "type": "Http",
+        "inputs": {
+          "method": "POST",
+          "uri": "@{parameters('dataverseUrl')}/api/data/v9.2/gr_hivereadings",
+          "headers": { "Content-Type": "application/json", "OData-MaxVersion": "4.0", "OData-Version": "4.0", "Accept": "application/json" },
+          "body": {
+            "gr_name": "Reading @{utcNow('yyyy-MM-ddTHH:mm:ss')}",
+            "gr_weight": "@triggerBody()?['Weight']",
+            "gr_internaltemp": "@triggerBody()?['InternalTemp']",
+            "gr_batteryvoltage": "@triggerBody()?['BatteryVoltage']",
+            "gr_hivehum": "@triggerBody()?['HiveHum']",
+            "gr_legtemp": "@triggerBody()?['LegTemp']",
+            "gr_readingtimestamp": "@utcNow()"
+          },
+          "authentication": { "type": "ActiveDirectoryOAuth", "tenant": "@parameters('tenantId')", "audience": "@parameters('dataverseUrl')", "clientId": "@parameters('clientId')", "secret": "@parameters('clientSecret')" }
+        },
+        "runAfter": {}
+      },
+      "Response": {
+        "type": "Response",
+        "kind": "Http",
+        "inputs": {
+          "statusCode": 200,
+          "headers": { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+          "body": { "status": "ok", "timestamp": "@utcNow()" }
+        },
+        "runAfter": { "Create_Reading": ["Succeeded"] }
+      }
+    },
+    "outputs": {}
+  }
+}

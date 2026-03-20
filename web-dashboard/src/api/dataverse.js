@@ -6,11 +6,10 @@
  * IMPORTANT: Call `await initDataStore()` once at app startup before rendering.
  */
 
-// Power Automate Flow URLs
-const TELEMETRY_READ_URL = 'https://093c0f3bca66ea3daf04bcc8a98c06.10.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/64df8c23e1f548e9a7888164706e316c/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=EeX8QCqqiPt7LsuoR44C2Cah6jwu_6jBcT0901ePSd8';
-// Apiary CRUD — replace after creating flows in Power Automate
-const APIARY_READ_URL = '%%APIARY_READ_FLOW_URL%%';
-const APIARY_WRITE_URL = '%%APIARY_WRITE_FLOW_URL%%';
+// Logic App URLs (Azure Consumption — Dataverse OData)
+const TELEMETRY_READ_URL = 'https://prod-25.ukwest.logic.azure.com:443/workflows/2a2177c3c7174e0cbd8fa0392b36fd17/triggers/manual/paths/invoke?api-version=2019-05-01&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=Mlt3jgZT4UQhN6-doEkU-FrAGZZWzneDHvmyBZfX8Sg';
+const APIARY_READ_URL = 'https://prod-01.ukwest.logic.azure.com:443/workflows/3ee8a8759b6248d38b47c30ab29abca1/triggers/manual/paths/invoke?api-version=2019-05-01&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=6BX8eq06bY1I2fJMqMRuszsIsFTL8kDZ4yOQF66OD-c';
+const APIARY_WRITE_URL = 'https://prod-00.ukwest.logic.azure.com:443/workflows/85b5d48749124f93ab929e8aacbecdf3/triggers/manual/paths/invoke?api-version=2019-05-01&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=ygYwSYDDTVPEwpSI5ynZ-8fJQd1aLaMEDuMFooN7w24';
 
 // In-memory cache
 let _hives = [];

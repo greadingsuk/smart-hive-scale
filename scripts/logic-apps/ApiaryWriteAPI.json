@@ -1,0 +1,137 @@
+{
+  "definition": {
+    "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+      "dataverseUrl": { "type": "String", "defaultValue": "https://orgc5731d44.crm.dynamics.com" },
+      "clientId": { "type": "String" },
+      "clientSecret": { "type": "SecureString" },
+      "tenantId": { "type": "String" }
+    },
+    "triggers": {
+      "manual": {
+        "type": "Request",
+        "kind": "Http",
+        "inputs": {
+          "method": "POST",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "entity": { "type": "string" },
+              "operation": { "type": "string" },
+              "data": { "type": "object" },
+              "id": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+    "actions": {
+      "EntityMap": {
+        "type": "InitializeVariable",
+        "inputs": {
+          "variables": [{
+            "name": "entitySet",
+            "type": "string",
+            "value": "@if(equals(triggerBody()?['entity'],'hives'),'gr_hives',if(equals(triggerBody()?['entity'],'inspections'),'gr_inspections',if(equals(triggerBody()?['entity'],'notes'),'gr_notes',if(equals(triggerBody()?['entity'],'tasks'),'gr_tasks','unknown'))))"
+          }]
+        },
+        "runAfter": {}
+      },
+      "IdFieldMap": {
+        "type": "InitializeVariable",
+        "inputs": {
+          "variables": [{
+            "name": "idField",
+            "type": "string",
+            "value": "@if(equals(triggerBody()?['entity'],'hives'),'gr_hiveid',if(equals(triggerBody()?['entity'],'inspections'),'gr_inspectionid',if(equals(triggerBody()?['entity'],'notes'),'gr_noteid',if(equals(triggerBody()?['entity'],'tasks'),'gr_taskid','unknown'))))"
+          }]
+        },
+        "runAfter": { "EntityMap": ["Succeeded"] }
+      },
+      "Route_By_Operation": {
+        "type": "Switch",
+        "expression": "@triggerBody()?['operation']",
+        "cases": {
+          "create": {
+            "case": "create",
+            "actions": {
+              "Create_Record": {
+                "type": "Http",
+                "inputs": {
+                  "method": "POST",
+                  "uri": "@{parameters('dataverseUrl')}/api/data/v9.2/@{variables('entitySet')}",
+                  "headers": { "Content-Type": "application/json", "OData-MaxVersion": "4.0", "OData-Version": "4.0", "Accept": "application/json", "Prefer": "return=representation" },
+                  "body": "@triggerBody()?['data']",
+                  "authentication": { "type": "ActiveDirectoryOAuth", "tenant": "@parameters('tenantId')", "audience": "@parameters('dataverseUrl')", "clientId": "@parameters('clientId')", "secret": "@parameters('clientSecret')" }
+                },
+                "runAfter": {}
+              },
+              "Response_Create": {
+                "type": "Response",
+                "kind": "Http",
+                "inputs": { "statusCode": 200, "headers": { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }, "body": { "status": "ok", "id": "@body('Create_Record')?[variables('idField')]" } },
+                "runAfter": { "Create_Record": ["Succeeded"] }
+              }
+            }
+          },
+          "update": {
+            "case": "update",
+            "actions": {
+              "Update_Record": {
+                "type": "Http",
+                "inputs": {
+                  "method": "PATCH",
+                  "uri": "@{parameters('dataverseUrl')}/api/data/v9.2/@{variables('entitySet')}(@{triggerBody()?['id']})",
+                  "headers": { "Content-Type": "application/json", "OData-MaxVersion": "4.0", "OData-Version": "4.0", "Accept": "application/json" },
+                  "body": "@triggerBody()?['data']",
+                  "authentication": { "type": "ActiveDirectoryOAuth", "tenant": "@parameters('tenantId')", "audience": "@parameters('dataverseUrl')", "clientId": "@parameters('clientId')", "secret": "@parameters('clientSecret')" }
+                },
+                "runAfter": {}
+              },
+              "Response_Update": {
+                "type": "Response",
+                "kind": "Http",
+                "inputs": { "statusCode": 200, "headers": { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }, "body": { "status": "ok" } },
+                "runAfter": { "Update_Record": ["Succeeded"] }
+              }
+            }
+          },
+          "delete": {
+            "case": "delete",
+            "actions": {
+              "Delete_Record": {
+                "type": "Http",
+                "inputs": {
+                  "method": "DELETE",
+                  "uri": "@{parameters('dataverseUrl')}/api/data/v9.2/@{variables('entitySet')}(@{triggerBody()?['id']})",
+                  "headers": { "OData-MaxVersion": "4.0", "OData-Version": "4.0", "Accept": "application/json" },
+                  "authentication": { "type": "ActiveDirectoryOAuth", "tenant": "@parameters('tenantId')", "audience": "@parameters('dataverseUrl')", "clientId": "@parameters('clientId')", "secret": "@parameters('clientSecret')" }
+                },
+                "runAfter": {}
+              },
+              "Response_Delete": {
+                "type": "Response",
+                "kind": "Http",
+                "inputs": { "statusCode": 200, "headers": { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }, "body": { "status": "ok" } },
+                "runAfter": { "Delete_Record": ["Succeeded"] }
+              }
+            }
+          }
+        },
+        "default": {
+          "actions": {
+            "Response_BadOp": {
+              "type": "Response",
+              "kind": "Http",
+              "inputs": { "statusCode": 400, "headers": { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }, "body": { "error": "Unknown operation. Use: create, update, delete" } },
+              "runAfter": {}
+            }
+          }
+        },
+        "runAfter": { "IdFieldMap": ["Succeeded"] }
+      }
+    },
+    "outputs": {}
+  }
+}
