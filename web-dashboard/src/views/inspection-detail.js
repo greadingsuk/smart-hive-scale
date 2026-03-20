@@ -44,9 +44,9 @@ export function renderInspectionDetail(app, params) {
       <!-- Header card with date + padlock -->
       <div class="card-surface">
         <div class="flex items-center justify-between">
-          <div>
+          <div class="flex items-center gap-2 flex-wrap">
             <span class="pill-amber">${record.type || 'Inspection'}</span>
-            <span class="text-sm text-hive-muted ml-2">${new Date(record.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
+            <input type="date" id="inspDate" class="text-sm px-2 py-1 rounded-lg" style="background:var(--hive-bg);border:1px solid var(--hive-border);color:var(--hive-text)" value="${record.date}" disabled>
           </div>
           <button id="lockToggle" class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs uppercase tracking-wider transition-all" style="background:var(--hive-bg);border:1px solid var(--hive-border);font-family:Inter,sans-serif;color:var(--hive-muted)">
             <svg id="lockIcon" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"/></svg>

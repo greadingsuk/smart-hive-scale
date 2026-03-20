@@ -109,8 +109,8 @@ export async function renderHiveDashboard(app, params) {
         <!-- Hive Metrics + Visual -->
         <div class="card p-5">
           <div class="section-subtitle mb-3">Hive Metrics</div>
-          <div class="flex gap-4">
-            <div class="flex-1 space-y-3">
+          <div class="grid grid-cols-2 gap-4">
+            <div class="space-y-3">
               <div class="flex items-center gap-2.5">
                 <svg class="w-4 h-4 text-hive-muted flex-shrink-0" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5"/></svg>
                 <span class="text-sm text-hive-text">Added: ${new Date(hive.dateAdded).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' })}</span>
@@ -121,12 +121,12 @@ export async function renderHiveDashboard(app, params) {
               </div>
               <div class="flex items-center gap-2.5">
                 <svg class="w-4 h-4 flex-shrink-0 ${daysSinceInsp !== null && daysSinceInsp > 10 ? 'text-hive-red' : 'text-hive-muted'}" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                <span class="text-sm ${daysSinceInsp !== null && daysSinceInsp > 10 ? 'text-hive-red' : 'text-hive-text'}">Last Activity: ${daysSinceInsp !== null ? daysSinceInsp : '—'} Days${lastInspDate ? ` (${lastInspDate.toLocaleDateString('en-GB', {day:'numeric',month:'short'})})` : ''}</span>
+                <span class="text-sm ${daysSinceInsp !== null && daysSinceInsp > 10 ? 'text-hive-red' : 'text-hive-text'}">Last Activity: ${daysSinceInsp !== null ? daysSinceInsp : '\u2014'} Days${lastInspDate ? ` (${lastInspDate.toLocaleDateString('en-GB', {day:'numeric',month:'short'})})` : ''}</span>
               </div>
             </div>
-            <!-- Embedded hive visual -->
-            <div class="flex-shrink-0 hidden sm:flex items-end">
-              ${renderHiveStack(hive.components || [], { size: 'sm' })}
+            <!-- Hive visual — centered and prominent -->
+            <div class="flex items-center justify-center rounded-xl py-3" style="background:var(--hive-bg)">
+              ${renderHiveStack(hive.components || [], { size: 'md' })}
             </div>
           </div>
         </div>
@@ -280,6 +280,34 @@ export async function renderHiveDashboard(app, params) {
     setHiveNote(hive.id, '');
     closeModal();
     renderHiveDashboard(app, params);
+  });
+
+  // Wire up queen image upload
+  document.getElementById('queenImageBtn')?.addEventListener('click', () => {
+    document.getElementById('queenImageInput')?.click();
+  });
+  document.getElementById('queenImageInput')?.addEventListener('change', (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      // Crop to square via canvas
+      const img = new Image();
+      img.onload = () => {
+        const size = Math.min(img.width, img.height);
+        const canvas = document.createElement('canvas');
+        canvas.width = 300; canvas.height = 300;
+        const ctx = canvas.getContext('2d');
+        const sx = (img.width - size) / 2;
+        const sy = (img.height - size) / 2;
+        ctx.drawImage(img, sx, sy, size, size, 0, 0, 300, 300);
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+        updateHive(hive.id, { queenImage: dataUrl });
+        renderHiveDashboard(app, params);
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
   });
 
   // Wire up hive operation buttons
