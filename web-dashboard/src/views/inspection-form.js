@@ -1,7 +1,7 @@
 /**
  * Inspection Form — luxury heritage design with progressive disclosure.
  */
-import { renderHeader, accordion, initAccordions, ICON } from '../components/ui.js';
+import { renderHeader } from '../components/ui.js';
 import { getHives, APIARY, saveInspection } from '../api/dataverse.js';
 import { fetchCurrentWeather } from '../api/weather.js';
 
@@ -32,7 +32,7 @@ export async function renderInspectionForm(app) {
     <main class="max-w-3xl mx-auto p-5 pb-8">
       <form id="inspectionForm" class="space-y-5">
 
-        <!-- Card 1: Colony Assessment -->
+        <!-- Card 1: Inspection Details -->
         <section class="card p-5">
           <div class="grid grid-cols-2 gap-4">
             <div>
@@ -92,27 +92,38 @@ export async function renderInspectionForm(app) {
               ${BROOD_PATTERNS.map(p => `<option value="${p}">${p || 'Not assessed'}</option>`).join('')}
             </select>
           </div>
-        </section>
 
-        <!-- Card 2: Measurements & Issues -->
-        <section class="card p-5">
-          <div class="flex items-center justify-between mb-3">
-            <span class="section-subtitle">Hive Weight</span>
-            <button type="button" id="fetchWeightBtn" class="section-subtitle text-hive-gold flex items-center gap-1">
-              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="1.25" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-              Fetch Live
-            </button>
-          </div>
-          <div class="grid grid-cols-3 gap-4">
-            <div><label class="text-[11px] text-hive-muted block mb-1">Left (kg)</label><input type="number" id="weightLeft" class="input-field" step="0.01" placeholder="0.00"></div>
-            <div><label class="text-[11px] text-hive-muted block mb-1">Right (kg)</label><input type="number" id="weightRight" class="input-field" step="0.01" placeholder="0.00"></div>
-            <div><label class="text-[11px] text-hive-muted block mb-1">Total (kg)</label><input type="number" id="weightTotal" class="input-field" step="0.01" placeholder="Auto" readonly></div>
+          <div class="border-t pt-4 mt-4" style="border-color:var(--hive-border)">
+            <div class="flex items-center justify-between mb-3">
+              <span class="section-subtitle">Hive Weight</span>
+              <button type="button" id="fetchWeightBtn" class="section-subtitle text-hive-gold flex items-center gap-1">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="1.25" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                Fetch Live
+              </button>
+            </div>
+            <div class="grid grid-cols-3 gap-4">
+              <div><label class="text-[11px] text-hive-muted block mb-1">Total (kg)</label><input type="number" id="weightTotal" class="input-field" step="0.01" placeholder="0.00"></div>
+              <div><label class="text-[11px] text-hive-muted block mb-1">Left (kg)</label><input type="number" id="weightLeft" class="input-field" step="0.01" placeholder="Auto"></div>
+              <div><label class="text-[11px] text-hive-muted block mb-1">Right (kg)</label><input type="number" id="weightRight" class="input-field" step="0.01" placeholder="Auto"></div>
+            </div>
           </div>
 
           <div class="border-t pt-4 mt-4" style="border-color:var(--hive-border)">
-            <h3 class="section-subtitle mb-2">Issues</h3>
-            ${accordion('diseases', 'Diseases', `<div class="grid grid-cols-2 gap-2 pb-2">${DISEASES.map(d => `<label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" data-disease="${d}" class="w-3.5 h-3.5 rounded accent-[var(--hive-red)]"><span class="text-sm text-hive-text">${d}</span></label>`).join('')}</div>`)}
-            ${accordion('pests', 'Pests', `<div class="grid grid-cols-2 gap-2 pb-2">${PESTS.map(p => `<label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" data-pest="${p}" class="w-3.5 h-3.5 rounded accent-[var(--hive-red)]"><span class="text-sm text-hive-text">${p}</span></label>`).join('')}</div>`)}
+            <h3 class="section-subtitle mb-3">Issues</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <span class="text-sm font-medium text-hive-text mb-2 block">Diseases</span>
+                <div class="space-y-2">
+                  ${DISEASES.map(d => `<label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" data-disease="${d}" class="w-3.5 h-3.5 rounded accent-[var(--hive-red)]"><span class="text-sm text-hive-text">${d}</span></label>`).join('')}
+                </div>
+              </div>
+              <div>
+                <span class="text-sm font-medium text-hive-text mb-2 block">Pests</span>
+                <div class="space-y-2">
+                  ${PESTS.map(p => `<label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" data-pest="${p}" class="w-3.5 h-3.5 rounded accent-[var(--hive-red)]"><span class="text-sm text-hive-text">${p}</span></label>`).join('')}
+                </div>
+              </div>
+            </div>
           </div>
         </section>
 
@@ -145,8 +156,6 @@ export async function renderInspectionForm(app) {
     </main>
   `;
 
-  initAccordions(app);
-
   const healthState = { queenSeen: false, broodSpotted: false, queenCells: false };
   document.querySelectorAll('[data-health]').forEach(cb => {
     cb.addEventListener('change', () => { healthState[cb.dataset.health] = cb.checked; });
@@ -167,7 +176,9 @@ export async function renderInspectionForm(app) {
 
   const wl = document.getElementById('weightLeft'), wr = document.getElementById('weightRight'), wt = document.getElementById('weightTotal');
   const calcTotal = () => { const l = parseFloat(wl.value)||0, r = parseFloat(wr.value)||0; if (l>0||r>0) wt.value = (l+r).toFixed(2); };
+  const splitTotal = () => { const t = parseFloat(wt.value)||0; if (t>0) { const half = (t/2).toFixed(2); wl.value = half; wr.value = half; } };
   wl.addEventListener('input', calcTotal); wr.addEventListener('input', calcTotal);
+  wt.addEventListener('input', splitTotal);
 
   document.getElementById('fetchWeightBtn').addEventListener('click', () => showToast('IoT weight fetch not yet connected'));
 
