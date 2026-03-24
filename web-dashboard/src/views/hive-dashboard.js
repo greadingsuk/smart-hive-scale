@@ -86,7 +86,7 @@ export async function renderHiveDashboard(app, params) {
         <div class="card p-5">
           <div class="flex items-center justify-between mb-3">
             <div class="section-subtitle">Queen Profile</div>
-            <a href="#/hive-form/${hive.id}" class="text-[10px] uppercase tracking-wider text-hive-gold hover:opacity-80" style="font-family:Inter,sans-serif">Edit</a>
+            <a href="#/hive-form/${hive.id}" class="text-[10px] uppercase tracking-wider text-hive-gold hover:opacity-80" style="font-family:'DM Sans',sans-serif">Edit</a>
           </div>
           <div class="grid grid-cols-2 gap-4">
             <div class="space-y-3">
@@ -184,7 +184,7 @@ export async function renderHiveDashboard(app, params) {
               <textarea id="noteModalText" rows="5" class="w-full rounded-xl p-4 text-sm leading-relaxed resize-none focus:outline-none focus:ring-2 focus:ring-hive-gold/40" style="background:var(--hive-bg);border:1px solid var(--hive-border);color:var(--hive-text)" placeholder="Write your note about this hive…">${hiveNote ? hiveNote.text : ''}</textarea>
             </div>
             <div class="px-5 pb-5 flex items-center justify-between">
-              ${hiveNote ? '<button id="noteModalDelete" class="text-xs text-hive-red hover:opacity-80 uppercase tracking-wider" style="font-family:Inter,sans-serif">Delete Note</button>' : '<span></span>'}
+              ${hiveNote ? '<button id="noteModalDelete" class="text-xs text-hive-red hover:opacity-80 uppercase tracking-wider" style="font-family:\'DM Sans\',sans-serif">Delete Note</button>' : '<span></span>'}
               <div class="flex gap-2">
                 <button id="noteModalCancel" class="btn-secondary text-xs py-2 px-5">Cancel</button>
                 <button id="noteModalSave" class="btn-primary text-xs py-2 px-5">Save Note</button>
@@ -327,6 +327,7 @@ export async function renderHiveDashboard(app, params) {
 
   // Wire up hive operation buttons
   app.querySelector('[data-op="split"]')?.addEventListener('click', () => {
+    if (!confirm(`Split "${hive.hiveName}"? This will create a new nuc from this hive.`)) return;
     const name = prompt('Name for the new nuc/hive (e.g. "Nuc 2 - Split"):');
     if (!name) return;
     const notes = prompt('Split notes (optional):') || '';
@@ -337,6 +338,7 @@ export async function renderHiveDashboard(app, params) {
   app.querySelector('[data-op="combine"]')?.addEventListener('click', () => {
     const otherHives = getHives().filter(h => h.id !== hive.id && h.status === 'Active');
     if (!otherHives.length) { alert('No other active hives to combine with.'); return; }
+    if (!confirm(`Combine "${hive.hiveName}" into another hive? This hive will be deactivated.`)) return;
     const list = otherHives.map((h, i) => `${i + 1}. ${h.hiveName}`).join('\n');
     const choice = prompt(`Combine ${hive.hiveName} INTO which hive? (this hive will be deactivated)\n\n${list}\n\nEnter number:`);
     if (!choice) return;

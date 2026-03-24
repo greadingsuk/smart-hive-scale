@@ -20,8 +20,8 @@ export function hexRing(percent, size = 48) {
   return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" class="hex-ring">
     <polygon points="${pts}" fill="none" stroke="var(--hive-border)" stroke-width="1"/>
     <polygon points="${pts}" fill="none" stroke="${color}" stroke-width="2.5" stroke-dasharray="${dash} ${perim}" stroke-linecap="round"/>
-    <text x="${cx}" y="${cy - 1}" text-anchor="middle" dominant-baseline="central" fill="${color}" font-family="Inter,sans-serif" font-size="${Math.round(size * 0.3)}" font-weight="700">${percent}</text>
-    <text x="${cx}" y="${cy + size * 0.18}" text-anchor="middle" fill="var(--hive-muted)" font-family="Inter,sans-serif" font-size="${Math.round(size * 0.14)}" font-weight="500">%</text>
+    <text x="${cx}" y="${cy - 1}" text-anchor="middle" dominant-baseline="central" fill="${color}" font-family="'DM Sans',sans-serif" font-size="${Math.round(size * 0.3)}" font-weight="700">${percent}</text>
+    <text x="${cx}" y="${cy + size * 0.18}" text-anchor="middle" fill="var(--hive-muted)" font-family="'DM Sans',sans-serif" font-size="${Math.round(size * 0.14)}" font-weight="500">%</text>
   </svg>`;
 }
 
@@ -33,11 +33,13 @@ export function strengthBadge(percent) {
   const dotClass = percent >= 80 ? 'bg-hive-sage' : percent >= 50 ? 'bg-hive-gold' : 'bg-hive-red';
   return `<span class="inline-flex items-center gap-1.5">
     <span class="w-1.5 h-1.5 rounded-full ${dotClass}"></span>
-    <span class="text-[10px] font-medium uppercase tracking-wider text-hive-muted" style="font-family:Inter,sans-serif;letter-spacing:0.08em">${label}</span>
+    <span class="text-[10px] font-medium uppercase tracking-wider text-hive-muted" style="font-family:'DM Sans',sans-serif;letter-spacing:0.08em">${label}</span>
   </span>`;
 }
 
 export function renderHeader(title, showBack = false, showAdmin = false, backUrl = '#/apiary') {
+  const currentHash = window.location.hash;
+  const isAdminActive = currentHash.startsWith('#/admin') || currentHash.startsWith('#/devices');
   return `
     <header class="app-header px-5 py-3 sticky top-0 z-50" style="border-bottom: 1px solid var(--hive-border);">
       <div class="max-w-6xl mx-auto flex items-center justify-between">
@@ -56,7 +58,7 @@ export function renderHeader(title, showBack = false, showAdmin = false, backUrl
               <div class="theme-knob absolute top-0.5 w-3 h-3 rounded-full shadow-sm" style="background:var(--hive-gold);left:2px;transition:left 200ms ease"></div>
             </div>
           </label>
-          ${showAdmin ? `<a href="#/admin" class="p-2 text-hive-muted hover:text-hive-gold" title="Settings">
+          ${showAdmin ? `<a href="#/admin" class="p-2 ${isAdminActive ? 'text-hive-gold' : 'text-hive-muted hover:text-hive-gold'}" title="Settings">
             <svg class="w-[17px] h-[17px]" fill="none" stroke="currentColor" stroke-width="1.25" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
           </a>` : ''}
           <button onclick="sessionStorage.removeItem('hive_user'); window.location.hash='#/login'" class="p-2 text-hive-muted hover:text-hive-red" title="Sign out">

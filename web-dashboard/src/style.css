@@ -136,7 +136,27 @@
     box-shadow: 0 -2px 12px rgba(0,0,0,0.06);
   }
 
-  * { transition-property: color, background-color, border-color, opacity, box-shadow, transform; transition-duration: 200ms; transition-timing-function: ease; }
+  * { transition: none; }
+  .card, .card-surface, .card-warm, .btn-primary, .btn-secondary, .btn-action, .pill, .input-field, .login-input, .toggle-track, .toggle-knob, .accordion-content, .accordion-trigger .chevron, .timeline-dot, .strength-fill, a, button, select, .theme-knob {
+    transition-property: color, background-color, border-color, opacity, box-shadow, transform;
+    transition-duration: 200ms;
+    transition-timing-function: ease;
+  }
+
+  /* ── Tabular figures for numeric data ── */
+  .metric-value, .text-xl, .text-2xl, [id$="Weight"], [id$="Temp"], [id$="Hum"], [id$="Bat"], [id$="Leg"] {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ── Reduced motion ── */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
 }
 
 @layer components {
@@ -164,7 +184,7 @@
     @apply font-medium px-6 py-2.5 rounded-full transition-all;
     background: #B0903D;
     color: #0B0D0E;
-    font-family: 'Inter', sans-serif;
+    font-family: 'DM Sans', sans-serif;
     letter-spacing: 0.06em;
     font-size: 12px;
     text-transform: uppercase;
@@ -175,7 +195,7 @@
   .btn-secondary {
     @apply bg-transparent border text-hive-muted px-6 py-2.5 rounded-full transition-all;
     border-color: var(--hive-border);
-    font-family: 'Inter', sans-serif;
+    font-family: 'DM Sans', sans-serif;
     letter-spacing: 0.06em;
     font-size: 12px;
     text-transform: uppercase;
@@ -188,7 +208,7 @@
     border: 1px solid var(--hive-border);
     box-shadow: var(--hive-shadow);
     color: var(--hive-gold);
-    font-family: 'Inter', sans-serif;
+    font-family: 'DM Sans', sans-serif;
     font-size: 10px;
     font-weight: 500;
     letter-spacing: 0.1em;
@@ -200,7 +220,7 @@
   /* ── Pills ── */
   .pill {
     @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-medium;
-    font-family: 'Inter', sans-serif;
+    font-family: 'DM Sans', sans-serif;
     text-transform: uppercase;
     letter-spacing: 0.08em;
   }
@@ -214,7 +234,7 @@
   .input-field {
     @apply w-full bg-transparent border-b px-1 py-2.5 text-hive-text focus:outline-none;
     border-color: var(--hive-border);
-    font-family: 'Inter', sans-serif;
+    font-family: 'DM Sans', sans-serif;
     font-size: 14px;
     border-radius: 0;
   }
@@ -225,7 +245,7 @@
   /* ── Login inputs — rounded boxes with icon ── */
   .login-input-group { @apply space-y-1.5; }
   .login-label {
-    font-family: 'Inter', sans-serif;
+    font-family: 'DM Sans', sans-serif;
     @apply block text-xs font-medium uppercase text-hive-muted;
     letter-spacing: 0.1em;
   }
@@ -239,7 +259,7 @@
     @apply w-full py-3 pl-11 pr-4 text-hive-text rounded-xl focus:outline-none;
     background: rgba(255,255,255,0.06);
     border: 1px solid rgba(255,255,255,0.10);
-    font-family: 'Inter', sans-serif;
+    font-family: 'DM Sans', sans-serif;
     font-size: 14px;
     -webkit-backdrop-filter: blur(8px);
     backdrop-filter: blur(8px);
@@ -258,9 +278,10 @@
   .metric-value {
     font-family: 'Playfair Display', serif;
     @apply text-2xl font-medium text-hive-gold leading-none;
+    font-variant-numeric: tabular-nums;
   }
   .metric-label {
-    font-family: 'Inter', sans-serif;
+    font-family: 'DM Sans', sans-serif;
     @apply text-[10px] font-medium uppercase tracking-widest text-hive-muted mt-1.5;
   }
   .metric-divider {
@@ -290,7 +311,7 @@
   /* ── Accordion ── */
   .accordion-trigger {
     @apply w-full flex items-center justify-between py-3 text-left cursor-pointer;
-    font-family: 'Inter', sans-serif;
+    font-family: 'DM Sans', sans-serif;
   }
   .accordion-trigger .chevron { transition: transform 200ms ease; }
   .accordion-trigger[aria-expanded="true"] .chevron { transform: rotate(180deg); }
@@ -310,7 +331,7 @@
 
   /* ── Section labels ── */
   .section-title { font-family: 'Playfair Display', serif; @apply text-lg font-medium text-hive-text; letter-spacing: -0.01em; }
-  .section-subtitle { font-family: 'Inter', sans-serif; @apply text-[10px] font-medium uppercase text-hive-muted; letter-spacing: 0.12em; }
+  .section-subtitle { font-family: 'DM Sans', sans-serif; @apply text-[10px] font-medium uppercase text-hive-muted; letter-spacing: 0.12em; }
 
   /* ── Hex tessellation background ── */
   .hex-bg {

@@ -172,7 +172,7 @@ export function renderHiveForm(app, params) {
         <section class="space-y-3">
           <button type="submit" class="btn-primary w-full py-3">${isEdit ? 'Save Changes' : 'Add Hive'}</button>
           <a href="${isEdit ? '#/hive/' + encodeURIComponent(hive.hiveName) : '#/admin'}" class="btn-secondary w-full py-3 text-center block">Cancel</a>
-          ${isEdit ? `<button type="button" id="deleteBtn" class="w-full py-3 text-xs uppercase tracking-wider text-hive-red hover:text-hive-red/80 transition-colors" style="font-family:Inter,sans-serif">Delete Hive</button>` : ''}
+          ${isEdit ? `<button type="button" id="deleteBtn" class="w-full py-3 text-xs uppercase tracking-wider text-hive-red hover:text-hive-red/80 transition-colors" style="font-family:'DM Sans',sans-serif">Delete Hive</button>` : ''}
         </section>
 
       </form>

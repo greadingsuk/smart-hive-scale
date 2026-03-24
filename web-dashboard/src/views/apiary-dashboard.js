@@ -62,17 +62,25 @@ export async function renderApiaryDashboard(app) {
       <!-- Charts -->
       <section class="card-surface">
         <h3 class="text-sm font-semibold text-hive-muted uppercase tracking-wider mb-3">Weight</h3>
-        <canvas id="weightChart" class="w-full"></canvas>
+        <div id="weightSkeleton" class="w-full h-[200px] rounded-lg animate-pulse" style="background:var(--hive-border)"></div>
+        <canvas id="weightChart" class="w-full hidden"></canvas>
+        <div id="weightEmpty" class="hidden text-center py-10">
+          <svg class="w-10 h-10 mx-auto mb-2 text-hive-muted opacity-30" fill="none" stroke="currentColor" stroke-width="1" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z"/></svg>
+          <p class="text-sm text-hive-muted">No weight data yet</p>
+          <p class="text-xs text-hive-muted mt-1">Connect your IoT scale to start recording</p>
+        </div>
       </section>
 
       <section class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div class="card-surface">
           <h3 class="text-sm font-semibold text-hive-muted uppercase tracking-wider mb-3">Temperature</h3>
-          <canvas id="tempChart" class="w-full"></canvas>
+          <div id="tempSkeleton" class="w-full h-[200px] rounded-lg animate-pulse" style="background:var(--hive-border)"></div>
+          <canvas id="tempChart" class="w-full hidden"></canvas>
         </div>
         <div class="card-surface">
           <h3 class="text-sm font-semibold text-hive-muted uppercase tracking-wider mb-3">Humidity & Battery</h3>
-          <canvas id="envChart" class="w-full"></canvas>
+          <div id="envSkeleton" class="w-full h-[200px] rounded-lg animate-pulse" style="background:var(--hive-border)"></div>
+          <canvas id="envChart" class="w-full hidden"></canvas>
         </div>
       </section>
 
@@ -117,13 +125,23 @@ export async function renderApiaryDashboard(app) {
     const hours = parseInt(document.getElementById('timeRange').value, 10);
     const cutoff = new Date(Date.now() - hours * 3600 * 1000);
 
+    // Hide skeletons helper
+    const hideSkeleton = (id) => { const el = document.getElementById(id); if (el) el.classList.add('hidden'); };
+    const showCanvas = (id) => { const el = document.getElementById(id); if (el) el.classList.remove('hidden'); };
+
     try {
       const data = await fetchTelemetry();
       document.getElementById('errorBanner').classList.add('hidden');
 
       const filtered = data.filter(r => new Date(r.timestamp) >= cutoff);
 
+      // Remove skeletons, show charts
+      hideSkeleton('weightSkeleton'); hideSkeleton('tempSkeleton'); hideSkeleton('envSkeleton');
+
       if (filtered.length > 0) {
+        showCanvas('weightChart'); showCanvas('tempChart'); showCanvas('envChart');
+        document.getElementById('weightEmpty')?.classList.add('hidden');
+
         const latest = filtered[filtered.length - 1];
         const setVal = (id, val, dec) => { document.getElementById(id).textContent = val != null ? Number(val).toFixed(dec) : '—'; };
         setVal('latestWeight', latest.weight, 1);
@@ -135,6 +153,10 @@ export async function renderApiaryDashboard(app) {
         const secs = Math.floor((Date.now() - new Date(latest.timestamp)) / 1000);
         document.getElementById('lastReading').textContent = secs < 60 ? `${secs}s ago` : secs < 3600 ? `${Math.floor(secs / 60)}m ago` : `${Math.floor(secs / 3600)}h ago`;
         document.getElementById('dataPoints').textContent = `${filtered.length} pts`;
+      } else {
+        // Show empty state for weight, still show (empty) charts for temp/env
+        document.getElementById('weightEmpty')?.classList.remove('hidden');
+        showCanvas('tempChart'); showCanvas('envChart');
       }
 
       const toPoint = (row, field) => ({ x: new Date(row.timestamp), y: row[field] });

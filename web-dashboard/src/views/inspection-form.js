@@ -32,11 +32,16 @@ export async function renderInspectionForm(app) {
     <main class="max-w-3xl mx-auto p-5 pb-8">
       <form id="inspectionForm" class="space-y-5">
         <section class="card p-5">
-          <label class="section-subtitle block mb-2">Hive</label>
+          <label class="section-subtitle block mb-2">Hive <span class="text-hive-red">*</span></label>
           <select id="hiveSelect" class="input-field" required>
             <option value="">Select hive...</option>
             ${hiveNames.map(n => `<option value="${n}" ${n === preselectedHive ? 'selected' : ''}>${n}</option>`).join('')}
           </select>
+        </section>
+
+        <section class="card p-5">
+          <label class="section-subtitle block mb-2">Inspection Date</label>
+          <input type="date" id="inspectionDate" class="input-field" value="${new Date().toISOString().slice(0, 10)}">
         </section>
 
         <section class="card p-5">
@@ -122,7 +127,7 @@ export async function renderInspectionForm(app) {
         </section>
 
         <div class="flex gap-3 pt-2">
-          <button type="submit" class="btn-primary flex-1 py-3">Save Inspection</button>
+          <button type="submit" id="saveBtn" class="btn-primary flex-1 py-3">Save Inspection</button>
           <a href="#/apiary" class="btn-secondary flex-1 py-3 text-center">Cancel</a>
         </div>
       </form>
@@ -172,10 +177,13 @@ export async function renderInspectionForm(app) {
     e.preventDefault();
     const hiveName = document.getElementById('hiveSelect').value;
     if (!hiveName) { showToast('Please select a hive'); return; }
+    const saveBtn = document.getElementById('saveBtn');
+    saveBtn.disabled = true;
+    saveBtn.textContent = 'Saving...';
     const diseases = []; document.querySelectorAll('[data-disease]:checked').forEach(cb => diseases.push(cb.dataset.disease));
     const pests = []; document.querySelectorAll('[data-pest]:checked').forEach(cb => pests.push(cb.dataset.pest));
     const inspection = {
-      date: new Date().toISOString().slice(0, 10), type: 'Inspection', hive: hiveName,
+      date: document.getElementById('inspectionDate').value || new Date().toISOString().slice(0, 10), type: 'Inspection', hive: hiveName,
       strength: parseInt(slider.value, 10), queenSeen: healthState.queenSeen,
       broodSpotted: healthState.broodSpotted, queenCells: healthState.queenCells,
       temperament: selectedTemperament, broodPattern: document.getElementById('broodPattern').value,
