@@ -56,55 +56,58 @@ export function renderInspectionDetail(app, params) {
         <h2 class="font-serif text-xl font-medium text-hive-text mt-3">${record.hive}</h2>
       </div>
 
-      <!-- Colony Health -->
+      <!-- Card 1: Colony Assessment -->
       <section class="card p-5">
-        <h3 class="section-subtitle mb-4">Colony Health</h3>
-        <div class="space-y-3">
-          <div class="flex items-center justify-between">
-            <span class="text-sm text-hive-text">Queen Spotted</span>
-            <label class="toggle-switch">
-              <input type="checkbox" data-field="queenSeen" ${record.queenSeen ? 'checked' : ''} disabled>
-              <div class="toggle-track"></div>
-              <div class="toggle-knob"></div>
-            </label>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <span class="section-subtitle block mb-3">Colony Health</span>
+            <div class="space-y-3">
+              <div class="flex items-center justify-between">
+                <span class="text-sm text-hive-text">Queen Spotted</span>
+                <label class="toggle-switch">
+                  <input type="checkbox" data-field="queenSeen" ${record.queenSeen ? 'checked' : ''} disabled>
+                  <div class="toggle-track"></div>
+                  <div class="toggle-knob"></div>
+                </label>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-sm text-hive-text">Brood Spotted</span>
+                <label class="toggle-switch">
+                  <input type="checkbox" data-field="broodSpotted" ${record.broodSpotted ? 'checked' : ''} disabled>
+                  <div class="toggle-track"></div>
+                  <div class="toggle-knob"></div>
+                </label>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-sm text-hive-text">Queen Cells Spotted</span>
+                <label class="toggle-switch">
+                  <input type="checkbox" data-field="queenCells" ${record.queenCells ? 'checked' : ''} disabled>
+                  <div class="toggle-track"></div>
+                  <div class="toggle-knob"></div>
+                </label>
+              </div>
+            </div>
           </div>
-          <div class="flex items-center justify-between">
-            <span class="text-sm text-hive-text">Brood Spotted</span>
-            <label class="toggle-switch">
-              <input type="checkbox" data-field="broodSpotted" ${record.broodSpotted ? 'checked' : ''} disabled>
-              <div class="toggle-track"></div>
-              <div class="toggle-knob"></div>
-            </label>
-          </div>
-          <div class="flex items-center justify-between">
-            <span class="text-sm text-hive-text">Queen Cells Spotted</span>
-            <label class="toggle-switch">
-              <input type="checkbox" data-field="queenCells" ${record.queenCells ? 'checked' : ''} disabled>
-              <div class="toggle-track"></div>
-              <div class="toggle-knob"></div>
-            </label>
+          <div class="space-y-4">
+            <div>
+              <div class="flex items-center justify-between mb-2">
+                <span class="section-subtitle">Hive Strength</span>
+                <span id="strengthValue" class="text-lg font-serif font-medium" style="color:${strengthColor}">${record.strength || '—'}%</span>
+              </div>
+              <input type="range" id="strengthSlider" min="0" max="100" value="${record.strength || 80}" class="w-full accent-[var(--hive-gold)]" disabled>
+            </div>
+            <div class="border-t pt-3" style="border-color:var(--hive-border)">
+              <span class="section-subtitle block mb-3">Temperament</span>
+              <div class="flex gap-2">
+                ${['Gentle', 'Active', 'Aggressive'].map(t =>
+                  `<button type="button" data-temperament="${t}" class="temperament-pill ${record.temperament === t ? 'btn-primary' : 'btn-secondary'} flex-1 py-2 text-xs" disabled>${t}</button>`
+                ).join('')}
+              </div>
+            </div>
           </div>
         </div>
-      </section>
 
-      <!-- Strength, Temperament, Brood Pattern -->
-      <section class="card p-5 space-y-5">
-        <div>
-          <div class="flex items-center justify-between mb-2">
-            <span class="section-subtitle">Hive Strength</span>
-            <span id="strengthValue" class="text-lg font-serif font-medium" style="color:${strengthColor}">${record.strength || '—'}%</span>
-          </div>
-          <input type="range" id="strengthSlider" min="0" max="100" value="${record.strength || 80}" class="w-full accent-[var(--hive-gold)]" disabled>
-        </div>
-        <div class="border-t pt-4" style="border-color:var(--hive-border)">
-          <span class="section-subtitle block mb-3">Temperament</span>
-          <div class="flex gap-2">
-            ${['Gentle', 'Active', 'Aggressive'].map(t =>
-              `<button type="button" data-temperament="${t}" class="temperament-pill ${record.temperament === t ? 'btn-primary' : 'btn-secondary'} flex-1 py-2 text-xs" disabled>${t}</button>`
-            ).join('')}
-          </div>
-        </div>
-        <div class="border-t pt-4" style="border-color:var(--hive-border)">
+        <div class="border-t pt-4 mt-4" style="border-color:var(--hive-border)">
           <label class="section-subtitle block mb-2">Brood Pattern</label>
           <select id="broodPattern" class="input-field" disabled>
             ${BROOD_PATTERNS.map(p => `<option value="${p}" ${record.broodPattern === p ? 'selected' : ''}>${p || 'Not assessed'}</option>`).join('')}
@@ -112,7 +115,7 @@ export function renderInspectionDetail(app, params) {
         </div>
       </section>
 
-      <!-- Weight -->
+      <!-- Card 2: Measurements & Issues -->
       <section class="card p-5">
         <span class="section-subtitle block mb-3">Hive Weight</span>
         <div class="grid grid-cols-3 gap-4">
@@ -129,32 +132,30 @@ export function renderInspectionDetail(app, params) {
             <input type="number" id="weightTotal" class="input-field" step="0.01" value="${record.weightTotal || ''}" placeholder="—" disabled>
           </div>
         </div>
+
+        <div class="border-t pt-4 mt-4" style="border-color:var(--hive-border)">
+          <h3 class="section-subtitle mb-2">Issues</h3>
+          ${accordion('diseases', 'Diseases', `<div class="grid grid-cols-2 gap-2 pb-2">${DISEASES.map(d => `<label class="flex items-center gap-2"><input type="checkbox" data-disease="${d}" class="w-3.5 h-3.5 rounded accent-[var(--hive-red)]" ${(record.diseases || []).includes(d) ? 'checked' : ''} disabled><span class="text-sm text-hive-text">${d}</span></label>`).join('')}</div>`)}
+          ${accordion('pests', 'Pests', `<div class="grid grid-cols-2 gap-2 pb-2">${PESTS.map(p => `<label class="flex items-center gap-2"><input type="checkbox" data-pest="${p}" class="w-3.5 h-3.5 rounded accent-[var(--hive-red)]" ${(record.pests || []).includes(p) ? 'checked' : ''} disabled><span class="text-sm text-hive-text">${p}</span></label>`).join('')}</div>`)}
+        </div>
       </section>
 
-      <!-- Issues -->
-      <section class="card p-5">
-        <h3 class="section-subtitle mb-2">Issues</h3>
-        ${accordion('diseases', 'Diseases', `<div class="grid grid-cols-2 gap-2 pb-2">${DISEASES.map(d => `<label class="flex items-center gap-2"><input type="checkbox" data-disease="${d}" class="w-3.5 h-3.5 rounded accent-[var(--hive-red)]" ${(record.diseases || []).includes(d) ? 'checked' : ''} disabled><span class="text-sm text-hive-text">${d}</span></label>`).join('')}</div>`)}
-        ${accordion('pests', 'Pests', `<div class="grid grid-cols-2 gap-2 pb-2">${PESTS.map(p => `<label class="flex items-center gap-2"><input type="checkbox" data-pest="${p}" class="w-3.5 h-3.5 rounded accent-[var(--hive-red)]" ${(record.pests || []).includes(p) ? 'checked' : ''} disabled><span class="text-sm text-hive-text">${p}</span></label>`).join('')}</div>`)}
-      </section>
-
-      <!-- Notes -->
+      <!-- Card 3: Notes & Environment -->
       <section class="card p-5">
         <label class="section-subtitle block mb-2">Notes</label>
-        <textarea id="inspNotes" class="input-field min-h-[100px] resize-y" style="border:1px solid var(--hive-border);border-radius:8px;padding:12px" disabled>${record.notes || ''}</textarea>
-      </section>
+        <textarea id="inspNotes" class="input-field min-h-[80px] resize-y" style="border:1px solid var(--hive-border);border-radius:8px;padding:12px" disabled>${record.notes || ''}</textarea>
 
-      <!-- Environment -->
-      <section class="card p-5">
-        <span class="section-subtitle block mb-3">Environment</span>
-        <div class="grid grid-cols-2 gap-4">
-          <div>
-            <label class="text-[11px] text-hive-muted block mb-1">Weather</label>
-            <input type="text" id="weatherConditions" class="input-field" value="${record.weatherConditions || ''}" placeholder="—" disabled>
-          </div>
-          <div>
-            <label class="text-[11px] text-hive-muted block mb-1">Temp (\u00b0C)</label>
-            <input type="number" id="weatherTemp" class="input-field" value="${record.weatherTemp || ''}" placeholder="—" disabled>
+        <div class="border-t pt-4 mt-4" style="border-color:var(--hive-border)">
+          <span class="section-subtitle block mb-3">Environment</span>
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="text-[11px] text-hive-muted block mb-1">Weather</label>
+              <input type="text" id="weatherConditions" class="input-field" value="${record.weatherConditions || ''}" placeholder="—" disabled>
+            </div>
+            <div>
+              <label class="text-[11px] text-hive-muted block mb-1">Temp (\u00b0C)</label>
+              <input type="number" id="weatherTemp" class="input-field" value="${record.weatherTemp || ''}" placeholder="—" disabled>
+            </div>
           </div>
         </div>
       </section>

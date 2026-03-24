@@ -31,53 +31,62 @@ export async function renderInspectionForm(app) {
     ${renderHeader('New Inspection', true)}
     <main class="max-w-3xl mx-auto p-5 pb-8">
       <form id="inspectionForm" class="space-y-5">
-        <section class="card p-5">
-          <label class="section-subtitle block mb-2">Hive <span class="text-hive-red">*</span></label>
-          <select id="hiveSelect" class="input-field" required>
-            <option value="">Select hive...</option>
-            ${hiveNames.map(n => `<option value="${n}" ${n === preselectedHive ? 'selected' : ''}>${n}</option>`).join('')}
-          </select>
-        </section>
 
+        <!-- Card 1: Colony Assessment -->
         <section class="card p-5">
-          <label class="section-subtitle block mb-2">Inspection Date</label>
-          <input type="date" id="inspectionDate" class="input-field" value="${new Date().toISOString().slice(0, 10)}">
-        </section>
-
-        <section class="card p-5">
-          <h3 class="section-subtitle mb-4">Colony Health</h3>
-          <div class="space-y-3">
-            ${['queenSeen:Queen Spotted', 'broodSpotted:Brood Spotted', 'queenCells:Queen Cells Spotted'].map(item => {
-              const [key, label] = item.split(':');
-              return `<div class="flex items-center justify-between">
-                <span class="text-sm text-hive-text">${label}</span>
-                <label class="toggle-switch">
-                  <input type="checkbox" data-health="${key}">
-                  <div class="toggle-track"></div>
-                  <div class="toggle-knob"></div>
-                </label>
-              </div>`;
-            }).join('')}
-          </div>
-        </section>
-
-        <section class="card p-5 space-y-5">
-          <div>
-            <div class="flex items-center justify-between mb-2">
-              <span class="section-subtitle">Hive Strength</span>
-              <span id="strengthValue" class="text-lg font-serif font-medium text-hive-gold">80%</span>
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="section-subtitle block mb-2">Hive <span class="text-hive-red">*</span></label>
+              <select id="hiveSelect" class="input-field" required>
+                <option value="">Select hive...</option>
+                ${hiveNames.map(n => `<option value="${n}" ${n === preselectedHive ? 'selected' : ''}>${n}</option>`).join('')}
+              </select>
             </div>
-            <input type="range" id="strengthSlider" min="0" max="100" value="80" class="w-full accent-[var(--hive-gold)]">
-          </div>
-          <div class="border-t pt-4" style="border-color:var(--hive-border)">
-            <span class="section-subtitle block mb-3">Temperament</span>
-            <div class="flex gap-2">
-              ${['Gentle', 'Active', 'Aggressive'].map(t =>
-                `<button type="button" data-temperament="${t}" class="temperament-pill btn-secondary flex-1 py-2 text-xs">${t}</button>`
-              ).join('')}
+            <div>
+              <label class="section-subtitle block mb-2">Inspection Date</label>
+              <input type="date" id="inspectionDate" class="input-field" value="${new Date().toISOString().slice(0, 10)}">
             </div>
           </div>
-          <div class="border-t pt-4" style="border-color:var(--hive-border)">
+
+          <div class="border-t pt-4 mt-4" style="border-color:var(--hive-border)">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <span class="section-subtitle block mb-3">Colony Health</span>
+                <div class="space-y-3">
+                  ${['queenSeen:Queen Spotted', 'broodSpotted:Brood Spotted', 'queenCells:Queen Cells Spotted'].map(item => {
+                    const [key, label] = item.split(':');
+                    return `<div class="flex items-center justify-between">
+                      <span class="text-sm text-hive-text">${label}</span>
+                      <label class="toggle-switch">
+                        <input type="checkbox" data-health="${key}">
+                        <div class="toggle-track"></div>
+                        <div class="toggle-knob"></div>
+                      </label>
+                    </div>`;
+                  }).join('')}
+                </div>
+              </div>
+              <div class="space-y-4">
+                <div>
+                  <div class="flex items-center justify-between mb-2">
+                    <span class="section-subtitle">Hive Strength</span>
+                    <span id="strengthValue" class="text-lg font-serif font-medium text-hive-gold">80%</span>
+                  </div>
+                  <input type="range" id="strengthSlider" min="0" max="100" value="80" class="w-full accent-[var(--hive-gold)]">
+                </div>
+                <div class="border-t pt-3" style="border-color:var(--hive-border)">
+                  <span class="section-subtitle block mb-3">Temperament</span>
+                  <div class="flex gap-2">
+                    ${['Gentle', 'Active', 'Aggressive'].map(t =>
+                      `<button type="button" data-temperament="${t}" class="temperament-pill btn-secondary flex-1 py-2 text-xs">${t}</button>`
+                    ).join('')}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="border-t pt-4 mt-4" style="border-color:var(--hive-border)">
             <label class="section-subtitle block mb-2">Brood Pattern</label>
             <select id="broodPattern" class="input-field">
               ${BROOD_PATTERNS.map(p => `<option value="${p}">${p || 'Not assessed'}</option>`).join('')}
@@ -85,6 +94,7 @@ export async function renderInspectionForm(app) {
           </div>
         </section>
 
+        <!-- Card 2: Measurements & Issues -->
         <section class="card p-5">
           <div class="flex items-center justify-between mb-3">
             <span class="section-subtitle">Hive Weight</span>
@@ -93,37 +103,38 @@ export async function renderInspectionForm(app) {
               Fetch Live
             </button>
           </div>
-          <div class="grid grid-cols-2 gap-4">
+          <div class="grid grid-cols-3 gap-4">
             <div><label class="text-[11px] text-hive-muted block mb-1">Left (kg)</label><input type="number" id="weightLeft" class="input-field" step="0.01" placeholder="0.00"></div>
             <div><label class="text-[11px] text-hive-muted block mb-1">Right (kg)</label><input type="number" id="weightRight" class="input-field" step="0.01" placeholder="0.00"></div>
+            <div><label class="text-[11px] text-hive-muted block mb-1">Total (kg)</label><input type="number" id="weightTotal" class="input-field" step="0.01" placeholder="Auto" readonly></div>
           </div>
-          <div class="mt-3"><label class="text-[11px] text-hive-muted block mb-1">Total (kg)</label><input type="number" id="weightTotal" class="input-field" step="0.01" placeholder="Auto-calculated" readonly></div>
+
+          <div class="border-t pt-4 mt-4" style="border-color:var(--hive-border)">
+            <h3 class="section-subtitle mb-2">Issues</h3>
+            ${accordion('diseases', 'Diseases', `<div class="grid grid-cols-2 gap-2 pb-2">${DISEASES.map(d => `<label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" data-disease="${d}" class="w-3.5 h-3.5 rounded accent-[var(--hive-red)]"><span class="text-sm text-hive-text">${d}</span></label>`).join('')}</div>`)}
+            ${accordion('pests', 'Pests', `<div class="grid grid-cols-2 gap-2 pb-2">${PESTS.map(p => `<label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" data-pest="${p}" class="w-3.5 h-3.5 rounded accent-[var(--hive-red)]"><span class="text-sm text-hive-text">${p}</span></label>`).join('')}</div>`)}
+          </div>
         </section>
 
-        <section class="card p-5">
-          <h3 class="section-subtitle mb-2">Issues</h3>
-          ${accordion('diseases', 'Diseases', `<div class="grid grid-cols-2 gap-2 pb-2">${DISEASES.map(d => `<label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" data-disease="${d}" class="w-3.5 h-3.5 rounded accent-[var(--hive-red)]"><span class="text-sm text-hive-text">${d}</span></label>`).join('')}</div>`)}
-          ${accordion('pests', 'Pests', `<div class="grid grid-cols-2 gap-2 pb-2">${PESTS.map(p => `<label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" data-pest="${p}" class="w-3.5 h-3.5 rounded accent-[var(--hive-red)]"><span class="text-sm text-hive-text">${p}</span></label>`).join('')}</div>`)}
-        </section>
-
+        <!-- Card 3: Notes & Environment -->
         <section class="card p-5">
           <label class="section-subtitle block mb-2">Notes</label>
-          <textarea id="notes" class="input-field min-h-[100px] resize-y" style="border:1px solid var(--hive-border);border-radius:8px;padding:12px" placeholder="Frame-by-frame notes, observations..."></textarea>
-        </section>
+          <textarea id="notes" class="input-field min-h-[80px] resize-y" style="border:1px solid var(--hive-border);border-radius:8px;padding:12px" placeholder="Frame-by-frame notes, observations..."></textarea>
 
-        <section class="card p-5">
-          <div class="flex items-center justify-between mb-3">
-            <span class="section-subtitle">Environment</span>
-            <button type="button" id="refreshWeatherBtn" class="section-subtitle text-hive-gold flex items-center gap-1">
-              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="1.25" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-              Auto-fill
-            </button>
+          <div class="border-t pt-4 mt-4" style="border-color:var(--hive-border)">
+            <div class="flex items-center justify-between mb-3">
+              <span class="section-subtitle">Environment</span>
+              <button type="button" id="refreshWeatherBtn" class="section-subtitle text-hive-gold flex items-center gap-1">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="1.25" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                Auto-fill
+              </button>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+              <div><label class="text-[11px] text-hive-muted block mb-1">Weather</label><input type="text" id="weatherConditions" class="input-field" placeholder="e.g. Clear Sky"></div>
+              <div><label class="text-[11px] text-hive-muted block mb-1">Temp (C)</label><input type="number" id="weatherTemp" class="input-field" step="1" placeholder="Temp"></div>
+            </div>
+            <div id="weatherStatus" class="text-[11px] text-hive-muted mt-2"></div>
           </div>
-          <div class="grid grid-cols-2 gap-4">
-            <div><label class="text-[11px] text-hive-muted block mb-1">Weather</label><input type="text" id="weatherConditions" class="input-field" placeholder="e.g. Clear Sky"></div>
-            <div><label class="text-[11px] text-hive-muted block mb-1">Temp (C)</label><input type="number" id="weatherTemp" class="input-field" step="1" placeholder="Temp"></div>
-          </div>
-          <div id="weatherStatus" class="text-[11px] text-hive-muted mt-2"></div>
         </section>
 
         <div class="flex gap-3 pt-2">
