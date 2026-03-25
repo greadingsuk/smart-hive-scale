@@ -146,12 +146,18 @@ export function renderHiveForm(app, params) {
           </div>
         </section>
 
-        <!-- Strength -->
+        <!-- Strength & Hive Colour -->
         <section class="card p-5">
           <label class="block section-subtitle mb-2">Hive Strength</label>
-          <div class="flex items-center gap-4">
+          <div class="flex items-center gap-4 mb-5">
             <input type="range" id="strengthSlider" min="0" max="100" value="${hive.strength}" class="flex-1 accent-hive-amber">
             <span id="strengthVal" class="text-xl font-bold text-hive-amber w-14 text-right">${hive.strength}%</span>
+          </div>
+          <label class="block section-subtitle mb-2">Hive Colour</label>
+          <div class="flex gap-2 flex-wrap" id="colorPicker">
+            ${colorOptions.map(c => `
+              <button type="button" data-color="${c.value}" class="color-swatch w-8 h-8 rounded-full transition-all ${hive.color === c.value ? 'ring-2 ring-offset-2 ring-offset-[var(--hive-surface)] scale-110' : 'hover:scale-110'}" style="background:${c.value};${hive.color === c.value ? `ring-color:${c.value}` : ''}" title="${c.label}"></button>
+            `).join('')}
           </div>
         </section>
 
@@ -183,6 +189,18 @@ export function renderHiveForm(app, params) {
   const slider = document.getElementById('strengthSlider');
   slider.addEventListener('input', () => {
     document.getElementById('strengthVal').textContent = slider.value + '%';
+  });
+
+  // Color picker
+  let selectedColor = hive.color || '#f59e0b';
+  document.getElementById('colorPicker').addEventListener('click', e => {
+    const btn = e.target.closest('[data-color]');
+    if (!btn) return;
+    selectedColor = btn.dataset.color;
+    document.querySelectorAll('.color-swatch').forEach(s => {
+      const isActive = s.dataset.color === selectedColor;
+      s.className = `color-swatch w-8 h-8 rounded-full transition-all ${isActive ? 'ring-2 ring-offset-2 ring-offset-[var(--hive-surface)] scale-110' : 'hover:scale-110'}`;
+    });
   });
 
   // Queen image upload
@@ -224,7 +242,7 @@ export function renderHiveForm(app, params) {
       type: document.getElementById('hiveType').value,
       hiveStyle: document.getElementById('hiveStyle').value,
       beeType: document.getElementById('beeType').value,
-      color: hive.color || '#f59e0b',
+      color: selectedColor,
       strength: parseInt(slider.value, 10),
       queenYear: parseInt(document.getElementById('queenYear').value, 10) || null,
       queenMarked: document.getElementById('queenMarked').value === 'true',

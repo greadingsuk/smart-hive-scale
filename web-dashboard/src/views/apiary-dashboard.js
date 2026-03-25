@@ -18,7 +18,7 @@
  *   5y   → 1 month averages| x-axis: month
  */
 import { renderHeader } from '../components/ui.js';
-import { fetchTelemetry, getAllActivity } from '../api/dataverse.js';
+import { fetchTelemetry, getAllActivity, getActiveHives } from '../api/dataverse.js';
 
 // ── Time range configuration ────────────────────────────────────────────────
 const TIME_RANGES = [
@@ -51,23 +51,30 @@ function downsample(points, bucketMs) {
 }
 
 // ── Manual weight extraction from inspections ───────────────────────────────
-function getManualWeights(cutoff) {
+// Returns a Map of hiveName → [{ x: Date, y: number }]
+function getManualWeightsByHive(cutoff) {
   const activity = getAllActivity();
-  const points = [];
+  const byHive = new Map();
   for (const a of activity) {
-    if (!a.date) continue;
+    if (!a.date || !a.hive) continue;
     const d = new Date(a.date);
     if (d < cutoff) continue;
-    // Only use the structured weightTotal field
     const w = a.weightTotal;
     if (w != null && w > 0) {
-      points.push({ x: d, y: +Number(w).toFixed(2), hive: a.hive });
+      if (!byHive.has(a.hive)) byHive.set(a.hive, []);
+      byHive.get(a.hive).push({ x: d, y: +Number(w).toFixed(2) });
     }
   }
-  return points.sort((a, b) => a.x - b.x);
+  for (const [, pts] of byHive) pts.sort((a, b) => a.x - b.x);
+  return byHive;
 }
 
 export async function renderApiaryDashboard(app) {
+  const hives = getActiveHives();
+  const hiveColorMap = {};
+  for (const h of hives) hiveColorMap[h.hiveName] = h.color || '#f59e0b';
+  const enabledHives = new Set(hives.map(h => h.hiveName));
+
   app.innerHTML = `
     ${renderHeader('Hive Dashboard', true)}
     <main class="max-w-5xl mx-auto p-4 pb-20 md:pb-4 space-y-6">
@@ -121,7 +128,18 @@ export async function renderApiaryDashboard(app) {
 
       <!-- Weight Chart -->
       <section class="card-surface">
-        <h3 class="text-sm font-semibold text-hive-muted uppercase tracking-wider mb-3">Weight</h3>
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-sm font-semibold text-hive-muted uppercase tracking-wider">Weight</h3>
+        </div>
+        <!-- Hive Filter Toggles -->
+        <div class="flex gap-2 mb-4 overflow-x-auto no-scrollbar" id="hiveFilters">
+          ${hives.map(h => `
+            <button data-hive="${h.hiveName}" class="hive-toggle flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all" style="border:2px solid ${h.color};background:${h.color}1a;color:${h.color}">
+              <span class="w-2.5 h-2.5 rounded-full flex-shrink-0" style="background:${h.color}"></span>
+              ${h.hiveName.replace(/^Hive \d+ - |^Nuc \d+ - /, '')}
+            </button>
+          `).join('')}
+        </div>
         <div id="weightSkeleton" class="w-full h-[200px] rounded-lg animate-pulse" style="background:var(--hive-border)"></div>
         <canvas id="weightChart" class="w-full hidden"></canvas>
         <div id="weightEmpty" class="hidden text-center py-10">
@@ -175,58 +193,28 @@ export async function renderApiaryDashboard(app) {
       tooltip: {
         backgroundColor: '#1a1d27', borderColor: '#2a2e3e', borderWidth: 1,
         titleColor: '#e4e4e7', bodyColor: '#e4e4e7', padding: 10,
-        callbacks: {
-          title: items => new Date(items[0].parsed.x).toLocaleString(),
-          label: ctx => {
-            const ds = ctx.dataset;
-            const val = ctx.parsed.y;
-            if (ds.label === 'Manual Weight (kg)') {
-              const pt = ds.data[ctx.dataIndex];
-              return `${pt.hive || 'Manual'}: ${val} kg`;
-            }
-            return `${ds.label}: ${val}`;
-          },
-        },
+        callbacks: { title: items => new Date(items[0].parsed.x).toLocaleString() },
       },
     },
   };
 
-  // Weight chart — two datasets: IoT line + manual scatter
+  // Weight chart — datasets built dynamically per hive
   const weightChart = new Chart(document.getElementById('weightChart'), {
     type: 'line',
-    data: {
-      datasets: [
-        {
-          label: 'Scale Weight (kg)',
-          borderColor: '#f59e0b',
-          backgroundColor: '#f59e0b1a',
-          fill: true,
-          tension: 0.3,
-          pointRadius: 0,
-          pointHoverRadius: 4,
-          borderWidth: 2,
-          data: [],
-          order: 2,
-        },
-        {
-          label: 'Manual Weight (kg)',
-          type: 'line',
-          borderColor: 'transparent',
-          backgroundColor: '#3b82f6',
-          pointBackgroundColor: '#3b82f6',
-          pointBorderColor: '#ffffff',
-          pointBorderWidth: 2,
-          pointRadius: 6,
-          pointHoverRadius: 8,
-          pointStyle: 'circle',
-          showLine: false,
-          data: [],
-          order: 1,
-        },
-      ],
-    },
+    data: { datasets: [] },
     options: {
       ...baseOpts,
+      plugins: {
+        ...baseOpts.plugins,
+        legend: { display: false }, // We use our own hive filter toggles
+        tooltip: {
+          ...baseOpts.plugins.tooltip,
+          callbacks: {
+            title: items => new Date(items[0].parsed.x).toLocaleString(),
+            label: ctx => `${ctx.dataset.label}: ${ctx.parsed.y} kg`,
+          },
+        },
+      },
       scales: {
         x: buildScaleX(activeRange),
         y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#9ca3af' }, title: { display: true, text: 'kg', color: '#9ca3af' } },
@@ -275,12 +263,13 @@ export async function renderApiaryDashboard(app) {
       const filtered = data.filter(r => new Date(r.timestamp) >= cutoff);
       // Filter out zero/null sensor readings (no real IoT data yet)
       const validSensor = filtered.filter(r => r.weight > 0 || r.internalTemp > 0 || r.hiveHum > 0);
-      const manualWeights = getManualWeights(cutoff);
+      const manualByHive = getManualWeightsByHive(cutoff);
+      const totalManual = Array.from(manualByHive.values()).reduce((s, pts) => s + pts.length, 0);
 
       hide('weightSkeleton'); hide('tempSkeleton'); hide('envSkeleton');
 
       const hasIoT = validSensor.length > 0;
-      const hasManual = manualWeights.length > 0;
+      const hasManual = totalManual > 0;
 
       if (hasIoT || hasManual) {
         show('weightChart'); show('tempChart'); show('envChart');
@@ -297,20 +286,57 @@ export async function renderApiaryDashboard(app) {
 
           const secs = Math.floor((Date.now() - new Date(latest.timestamp)) / 1000);
           document.getElementById('lastReading').textContent = secs < 60 ? `${secs}s ago` : secs < 3600 ? `${Math.floor(secs / 60)}m ago` : `${Math.floor(secs / 3600)}h ago`;
-          document.getElementById('dataPoints').textContent = `${validSensor.length} sensor + ${manualWeights.length} manual`;
+          document.getElementById('dataPoints').textContent = `${validSensor.length} sensor + ${totalManual} manual`;
         } else if (hasManual) {
-          document.getElementById('dataPoints').textContent = `${manualWeights.length} manual`;
+          document.getElementById('dataPoints').textContent = `${totalManual} manual`;
         }
       } else {
         show('weightEmpty');
         show('tempChart'); show('envChart');
       }
 
-      // Build IoT weight points and downsample
+      // ── Build per-hive weight datasets ──────────────────────────────
+      const datasets = [];
+      // IoT scale line (single scale, not per-hive yet)
       const rawWeight = validSensor.filter(r => r.weight != null && r.weight > 0).map(r => ({ x: new Date(r.timestamp), y: r.weight }));
-      weightChart.data.datasets[0].data = downsample(rawWeight, activeRange.bucketMs);
-      // Manual weights — always show as-is (never downsample)
-      weightChart.data.datasets[1].data = manualWeights;
+      if (rawWeight.length > 0) {
+        datasets.push({
+          label: 'IoT Scale',
+          borderColor: '#9ca3af',
+          backgroundColor: '#9ca3af1a',
+          fill: true,
+          tension: 0.3,
+          pointRadius: 0,
+          pointHoverRadius: 4,
+          borderWidth: 2,
+          borderDash: [4, 2],
+          data: downsample(rawWeight, activeRange.bucketMs),
+          order: 10,
+        });
+      }
+      // Per-hive manual weight datasets
+      for (const [hiveName, points] of manualByHive) {
+        if (!enabledHives.has(hiveName)) continue;
+        const color = hiveColorMap[hiveName] || '#9ca3af';
+        datasets.push({
+          label: hiveName,
+          borderColor: color,
+          backgroundColor: color,
+          pointBackgroundColor: color,
+          pointBorderColor: '#ffffff',
+          pointBorderWidth: 2,
+          pointRadius: 6,
+          pointHoverRadius: 8,
+          pointStyle: 'circle',
+          borderWidth: 2,
+          tension: 0.3,
+          showLine: true,
+          fill: false,
+          data: points,
+          order: 1,
+        });
+      }
+      weightChart.data.datasets = datasets;
 
       // Temp & env — downsample too
       const rawInternal = validSensor.filter(r => r.internalTemp != null && r.internalTemp > 0).map(r => ({ x: new Date(r.timestamp), y: r.internalTemp }));
@@ -344,6 +370,28 @@ export async function renderApiaryDashboard(app) {
       c.className = `range-chip flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${isActive ? 'bg-hive-gold/20 text-hive-gold' : 'text-hive-muted hover:text-hive-text'}`;
       c.style.borderColor = isActive ? 'var(--hive-gold)' : 'var(--hive-border)';
     });
+    refresh();
+  });
+
+  // ── Hive filter toggle handlers ───────────────────────────────────────
+  document.getElementById('hiveFilters').addEventListener('click', e => {
+    const btn = e.target.closest('[data-hive]');
+    if (!btn) return;
+    const hiveName = btn.dataset.hive;
+    const color = hiveColorMap[hiveName] || '#9ca3af';
+    if (enabledHives.has(hiveName)) {
+      enabledHives.delete(hiveName);
+      btn.style.background = 'transparent';
+      btn.style.borderColor = 'var(--hive-border)';
+      btn.style.color = 'var(--hive-muted)';
+      btn.style.opacity = '0.5';
+    } else {
+      enabledHives.add(hiveName);
+      btn.style.background = color + '1a';
+      btn.style.borderColor = color;
+      btn.style.color = color;
+      btn.style.opacity = '1';
+    }
     refresh();
   });
 

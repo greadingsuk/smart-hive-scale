@@ -49,7 +49,7 @@ export async function renderApiary(app) {
         <div class="flex gap-3 overflow-x-auto no-scrollbar pb-2">
           ${activeHives.map(h => `
             <a href="#/hive/${encodeURIComponent(h.hiveName)}" class="flex-shrink-0 w-[170px] animate-in">
-              <div class="card p-4 flex flex-col items-center" style="min-height:220px">
+              <div class="card p-4 flex flex-col items-center" style="min-height:220px;border-top:3px solid ${h.color}">
                 <div class="w-full h-24 flex items-end justify-center mb-3">${renderHiveThumb(h.components, h.color)}</div>
                 <h3 class="font-serif text-sm font-medium text-hive-text text-center leading-tight mb-1.5">${h.hiveName}</h3>
                 <div class="mb-1">${strengthBadge(h.strength)}</div>
