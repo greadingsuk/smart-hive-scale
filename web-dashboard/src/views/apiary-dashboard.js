@@ -58,17 +58,11 @@ function getManualWeights(cutoff) {
     if (!a.date) continue;
     const d = new Date(a.date);
     if (d < cutoff) continue;
-    // Use structured weightTotal field first
-    let w = a.weightTotal;
-    // Fall back to parsing Left/Right from notes
-    if (w == null && a.weightLeft != null && a.weightRight != null) {
-      w = (Number(a.weightLeft) || 0) + (Number(a.weightRight) || 0);
+    // Only use the structured weightTotal field
+    const w = a.weightTotal;
+    if (w != null && w > 0) {
+      points.push({ x: d, y: +Number(w).toFixed(2), hive: a.hive });
     }
-    if (w == null && a.notes) {
-      const m = a.notes.match(/Left\s+([\d.]+)\s+Right\s+([\d.]+)/i);
-      if (m) w = parseFloat(m[1]) + parseFloat(m[2]);
-    }
-    if (w != null && w > 0) points.push({ x: d, y: +Number(w).toFixed(2) });
   }
   return points.sort((a, b) => a.x - b.x);
 }
@@ -181,7 +175,18 @@ export async function renderApiaryDashboard(app) {
       tooltip: {
         backgroundColor: '#1a1d27', borderColor: '#2a2e3e', borderWidth: 1,
         titleColor: '#e4e4e7', bodyColor: '#e4e4e7', padding: 10,
-        callbacks: { title: items => new Date(items[0].parsed.x).toLocaleString() },
+        callbacks: {
+          title: items => new Date(items[0].parsed.x).toLocaleString(),
+          label: ctx => {
+            const ds = ctx.dataset;
+            const val = ctx.parsed.y;
+            if (ds.label === 'Manual Weight (kg)') {
+              const pt = ds.data[ctx.dataIndex];
+              return `${pt.hive || 'Manual'}: ${val} kg`;
+            }
+            return `${ds.label}: ${val}`;
+          },
+        },
       },
     },
   };
@@ -268,11 +273,13 @@ export async function renderApiaryDashboard(app) {
       hide('errorBanner');
 
       const filtered = data.filter(r => new Date(r.timestamp) >= cutoff);
+      // Filter out zero/null sensor readings (no real IoT data yet)
+      const validSensor = filtered.filter(r => r.weight > 0 || r.internalTemp > 0 || r.hiveHum > 0);
       const manualWeights = getManualWeights(cutoff);
 
       hide('weightSkeleton'); hide('tempSkeleton'); hide('envSkeleton');
 
-      const hasIoT = filtered.length > 0;
+      const hasIoT = validSensor.length > 0;
       const hasManual = manualWeights.length > 0;
 
       if (hasIoT || hasManual) {
@@ -280,7 +287,7 @@ export async function renderApiaryDashboard(app) {
         hide('weightEmpty');
 
         if (hasIoT) {
-          const latest = filtered[filtered.length - 1];
+          const latest = validSensor[validSensor.length - 1];
           const setVal = (id, val, dec) => { document.getElementById(id).textContent = val != null ? Number(val).toFixed(dec) : '—'; };
           setVal('latestWeight', latest.weight, 1);
           setVal('latestTemp', latest.internalTemp, 1);
@@ -290,7 +297,9 @@ export async function renderApiaryDashboard(app) {
 
           const secs = Math.floor((Date.now() - new Date(latest.timestamp)) / 1000);
           document.getElementById('lastReading').textContent = secs < 60 ? `${secs}s ago` : secs < 3600 ? `${Math.floor(secs / 60)}m ago` : `${Math.floor(secs / 3600)}h ago`;
-          document.getElementById('dataPoints').textContent = `${filtered.length} sensor + ${manualWeights.length} manual`;
+          document.getElementById('dataPoints').textContent = `${validSensor.length} sensor + ${manualWeights.length} manual`;
+        } else if (hasManual) {
+          document.getElementById('dataPoints').textContent = `${manualWeights.length} manual`;
         }
       } else {
         show('weightEmpty');
@@ -298,16 +307,16 @@ export async function renderApiaryDashboard(app) {
       }
 
       // Build IoT weight points and downsample
-      const rawWeight = filtered.filter(r => r.weight != null).map(r => ({ x: new Date(r.timestamp), y: r.weight }));
+      const rawWeight = validSensor.filter(r => r.weight != null && r.weight > 0).map(r => ({ x: new Date(r.timestamp), y: r.weight }));
       weightChart.data.datasets[0].data = downsample(rawWeight, activeRange.bucketMs);
       // Manual weights — always show as-is (never downsample)
       weightChart.data.datasets[1].data = manualWeights;
 
       // Temp & env — downsample too
-      const rawInternal = filtered.filter(r => r.internalTemp != null).map(r => ({ x: new Date(r.timestamp), y: r.internalTemp }));
-      const rawLeg = filtered.filter(r => r.legTemp != null).map(r => ({ x: new Date(r.timestamp), y: r.legTemp }));
-      const rawHum = filtered.filter(r => r.hiveHum != null).map(r => ({ x: new Date(r.timestamp), y: r.hiveHum }));
-      const rawBat = filtered.filter(r => r.batteryVoltage != null).map(r => ({ x: new Date(r.timestamp), y: r.batteryVoltage }));
+      const rawInternal = validSensor.filter(r => r.internalTemp != null && r.internalTemp > 0).map(r => ({ x: new Date(r.timestamp), y: r.internalTemp }));
+      const rawLeg = validSensor.filter(r => r.legTemp != null && r.legTemp > 0).map(r => ({ x: new Date(r.timestamp), y: r.legTemp }));
+      const rawHum = validSensor.filter(r => r.hiveHum != null && r.hiveHum > 0).map(r => ({ x: new Date(r.timestamp), y: r.hiveHum }));
+      const rawBat = validSensor.filter(r => r.batteryVoltage != null && r.batteryVoltage > 0).map(r => ({ x: new Date(r.timestamp), y: r.batteryVoltage }));
 
       tempChart.data.datasets[0].data = downsample(rawInternal, activeRange.bucketMs);
       tempChart.data.datasets[1].data = downsample(rawLeg, activeRange.bucketMs);
