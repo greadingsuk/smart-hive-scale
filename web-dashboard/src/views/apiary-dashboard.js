@@ -18,7 +18,7 @@
  *   5y   → 1 month averages| x-axis: month
  */
 import { renderHeader } from '../components/ui.js';
-import { fetchTelemetry, getAllActivity, getActiveHives } from '../api/dataverse.js';
+import { fetchTelemetry, getAllActivity, getActiveHives, refreshDataStore } from '../api/dataverse.js';
 
 // ── Time range configuration ────────────────────────────────────────────────
 const TIME_RANGES = [
@@ -257,11 +257,21 @@ export async function renderApiaryDashboard(app) {
   });
 
   // ── Refresh logic ─────────────────────────────────────────────────────
+  let isManualRefresh = false;
+
   async function refresh() {
     const cutoff = new Date(Date.now() - activeRange.hours * 3600 * 1000);
 
     const hide = id => document.getElementById(id)?.classList.add('hidden');
     const show = id => document.getElementById(id)?.classList.remove('hidden');
+
+    // On manual refresh, reload all data from Dataverse
+    if (isManualRefresh) {
+      await refreshDataStore();
+      // Rebuild hive color map from fresh data
+      for (const h of getActiveHives()) hiveColorMap[h.hiveName] = h.color || '#f59e0b';
+      isManualRefresh = false;
+    }
 
     // Update x-axis for all charts
     const newX = buildScaleX(activeRange);
@@ -410,7 +420,10 @@ export async function renderApiaryDashboard(app) {
 
   refresh();
   const timer = setInterval(refresh, 5 * 60 * 1000);
-  document.getElementById('refreshBtn').addEventListener('click', refresh);
+  document.getElementById('refreshBtn').addEventListener('click', () => {
+    isManualRefresh = true;
+    refresh();
+  });
 
   return () => {
     clearInterval(timer);

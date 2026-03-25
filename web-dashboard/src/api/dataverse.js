@@ -37,6 +37,21 @@ export async function initDataStore() {
 }
 export function isDataLoaded() { return _dataLoaded; }
 
+export async function refreshDataStore() {
+  try {
+    const [hives, inspections, notes, tasks] = await Promise.all([
+      fetchEntity('hives'), fetchEntity('inspections'),
+      fetchEntity('notes'), fetchEntity('tasks'),
+    ]);
+    _hives = hives.map(mapHiveFromDv);
+    _inspections = inspections.map(mapInspectionFromDv).sort((a, b) => new Date(b.date) - new Date(a.date));
+    _notes = notes.map(mapNoteFromDv);
+    _tasks = tasks.map(mapTaskFromDv);
+  } catch (err) {
+    console.error('Failed to refresh from Dataverse:', err);
+  }
+}
+
 async function fetchEntity(entity) {
   if (!APIARY_READ_URL || APIARY_READ_URL.includes('%%')) { console.warn(`Read flow not configured for ${entity}`); return []; }
   const sep = APIARY_READ_URL.includes('?') ? '&' : '?';
