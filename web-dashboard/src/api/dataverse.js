@@ -138,7 +138,10 @@ export const QUEEN_SOURCES = ['Bred', 'Purchased', 'Swarm', 'Supersedure', 'Emer
 export const QUEEN_COLORS = ['Blue', 'White', 'Yellow', 'Red', 'Green', 'Pink'];
 
 // Hive CRUD
+export const ARCHIVE_STATUSES = ['Dead', 'Combined', 'Moved', 'Sold'];
 export function getHives() { return _hives; }
+export function getArchivedHives() { return _hives.filter(h => ARCHIVE_STATUSES.includes(h.status)); }
+export function getActiveHives() { return _hives.filter(h => !ARCHIVE_STATUSES.includes(h.status)); }
 export function getHiveById(id) { return _hives.find(h => h.id === id); }
 export function addHive(hive) {
   hive.id = hive.id || 'hive-' + Date.now();
@@ -202,9 +205,15 @@ export function deadOutHive(hiveId, notes) {
   addActivityRecord({ type: 'Hive Death', hive: hive.hiveName, notes: notes || 'Colony died out.', strength: 0, queenSeen: false, broodSpotted: false });
   updateHive(hiveId, { status: 'Dead', strength: 0 });
 }
-export function moveHive(hiveId, newLocation, notes) {
+export function moveHive(hiveId, newLocation, notes, leavingApiary = false) {
   const hive = getHiveById(hiveId); if (!hive) return;
   addActivityRecord({ type: 'Moved', hive: hive.hiveName, notes: `Moved to ${newLocation}. ${notes || ''}`.trim(), strength: hive.strength, queenSeen: false, broodSpotted: false });
+  if (leavingApiary) updateHive(hiveId, { status: 'Moved' });
+}
+export function sellHive(hiveId, buyer, notes) {
+  const hive = getHiveById(hiveId); if (!hive) return;
+  addActivityRecord({ type: 'Sold', hive: hive.hiveName, notes: `Sold to ${buyer || 'unknown buyer'}. ${notes || ''}`.trim(), strength: hive.strength, queenSeen: false, broodSpotted: false });
+  updateHive(hiveId, { status: 'Sold' });
 }
 const COMPONENT_MAP_TO_NUC = { 'hive-roof': 'nuc-roof', 'hive-floor': 'nuc-floor', 'hive-stand': 'nuc-stand', 'super': 'nuc-super', 'national-brood': 'nuc-brood', '14x12-brood': 'nuc-brood', 'hive-eke': 'nuc-eke' };
 const COMPONENT_MAP_TO_HIVE = { 'nuc-roof': 'hive-roof', 'nuc-floor': 'hive-floor', 'nuc-stand': 'hive-stand', 'nuc-brood': 'national-brood', 'nuc-super': 'super', 'nuc-eke': 'hive-eke' };

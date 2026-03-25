@@ -19,6 +19,8 @@ import { renderTasks } from './views/tasks.js';
 import { renderNotes } from './views/notes.js';
 import { renderInspections } from './views/inspections-list.js';
 import { renderInspectionDetail } from './views/inspection-detail.js';
+import { renderHiveArchive } from './views/hive-archive.js';
+import { renderHiveArchiveDetail } from './views/hive-archive-detail.js';
 
 // Init theme & embossed hex corners before first render
 initTheme();
@@ -38,6 +40,8 @@ registerRoute('#/tasks', renderTasks);
 registerRoute('#/notes', renderNotes);
 registerRoute('#/inspections', renderInspections);
 registerRoute('#/inspection/:id', renderInspectionDetail);
+registerRoute('#/archive', renderHiveArchive);
+registerRoute('#/archive/:id', renderHiveArchiveDetail);
 
 // Wire theme toggle after each route change
 window.addEventListener('hashchange', () => setTimeout(wireThemeToggle, 50));

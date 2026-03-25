@@ -3,7 +3,7 @@
  */
 import { renderHeader, strengthBar, strengthBadge, hexRing, formatDate, activityBadge, ICON } from '../components/ui.js';
 import { renderHiveThumb } from '../components/hive-visual.js';
-import { APIARY, getHives, getActivityTimeline, getApiaryNotes, getApiaryTasks, toggleTask } from '../api/dataverse.js';
+import { APIARY, getHives, getArchivedHives, getActivityTimeline, getApiaryNotes, getApiaryTasks, toggleTask } from '../api/dataverse.js';
 import { fetchCurrentWeather } from '../api/weather.js';
 
 export async function renderApiary(app) {
@@ -12,6 +12,7 @@ export async function renderApiary(app) {
   const notes = getApiaryNotes();
   const tasks = getApiaryTasks();
   const activeHives = hives.filter(h => h.status === 'Active');
+  const archivedCount = getArchivedHives().length;
 
   app.innerHTML = `
     ${renderHeader(APIARY.name, false, true)}
@@ -40,7 +41,10 @@ export async function renderApiary(app) {
       <section class="px-5 mb-8">
         <div class="flex items-center justify-between mb-4">
           <h2 class="section-title">${activeHives.length} Hive${activeHives.length !== 1 ? 's' : ''}</h2>
-          <a href="#/admin" class="section-subtitle text-hive-gold hover:opacity-80">Manage</a>
+          <div class="flex items-center gap-3">
+            ${archivedCount > 0 ? `<a href="#/archive" class="section-subtitle text-hive-muted hover:text-hive-gold transition-colors">Archive (${archivedCount})</a>` : ''}
+            <a href="#/admin" class="section-subtitle text-hive-gold hover:opacity-80">Manage</a>
+          </div>
         </div>
         <div class="flex gap-3 overflow-x-auto no-scrollbar pb-2">
           ${activeHives.map(h => `
