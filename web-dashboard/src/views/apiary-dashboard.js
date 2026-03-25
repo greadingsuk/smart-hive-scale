@@ -175,9 +175,22 @@ export async function renderApiaryDashboard(app) {
   let activeRange = TIME_RANGES.find(r => r.key === DEFAULT_RANGE);
 
   function buildScaleX(range) {
+    const now = new Date();
+    const min = new Date(now.getTime() - range.hours * 3600 * 1000);
     return {
       type: 'time',
-      time: { unit: range.xUnit, displayFormats: { [range.xUnit]: range.xFormat }, tooltipFormat: range.tooltipFmt },
+      min: min.toISOString(),
+      max: now.toISOString(),
+      time: {
+        unit: range.xUnit,
+        displayFormats: {
+          hour: 'HH:mm',
+          day: 'dd MMM',
+          week: 'dd MMM',
+          month: 'MMM yyyy',
+        },
+        tooltipFormat: range.tooltipFmt,
+      },
       grid: { color: 'rgba(255,255,255,0.05)' },
       ticks: { color: '#9ca3af', maxTicksLimit: 10, autoSkip: true, maxRotation: 0 },
     };
