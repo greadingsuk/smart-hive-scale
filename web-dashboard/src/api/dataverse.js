@@ -127,6 +127,14 @@ export function saveInspection(data) {
   _inspections.unshift(record);
   writeAsync('inspections', 'create', mapInspectionToDv(record));
 }
+export function updateInspection(id, updates) {
+  const idx = _inspections.findIndex(a => a.id === id || a._dvId === id);
+  if (idx === -1) return null;
+  _inspections[idx] = { ..._inspections[idx], ...updates };
+  const dvId = _inspections[idx]._dvId || id;
+  writeAsync('inspections', 'update', mapInspectionToDv(_inspections[idx]), dvId);
+  return _inspections[idx];
+}
 
 // Static config
 export const COMPONENT_TYPES = [

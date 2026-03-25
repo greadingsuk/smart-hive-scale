@@ -3,7 +3,7 @@
  * Shows all fields matching the inspection form.
  */
 import { renderHeader, accordion, initAccordions } from '../components/ui.js';
-import { getAllActivity, getCustomActivity } from '../api/dataverse.js';
+import { getAllActivity, getCustomActivity, updateInspection } from '../api/dataverse.js';
 
 const DISEASES = ['Varroa mites', 'Nosema', 'Chalkbrood', 'Stonebrood', 'American Foulbrood', 'European Foulbrood'];
 const PESTS = ['Waxmoth', 'Mice', 'Ants', 'Wasps', 'Small Hive Beetle', 'Hornets'];
@@ -182,7 +182,7 @@ export function renderInspectionDetail(app, params) {
 
   lockBtn.addEventListener('click', () => {
     locked = !locked;
-    allInputs.forEach(el => { if (el.id !== 'weightTotal') el.disabled = locked; });
+    allInputs.forEach(el => el.disabled = locked);
     tempButtons.forEach(btn => btn.disabled = locked);
 
     if (locked) {
@@ -218,13 +218,44 @@ export function renderInspectionDetail(app, params) {
   wl.addEventListener('input', calcTotal);
   wr.addEventListener('input', calcTotal);
 
-  // Save (for custom/localStorage records only)
+  // Save — collect all field values and update the inspection record
   document.getElementById('saveBtn')?.addEventListener('click', () => {
-    // Show confirmation toast
+    const selectedTemp = app.querySelector('.temperament-pill.btn-primary');
+    const updates = {
+      date: document.getElementById('inspDate').value,
+      queenSeen: app.querySelector('[data-field="queenSeen"]').checked,
+      broodSpotted: app.querySelector('[data-field="broodSpotted"]').checked,
+      queenCells: app.querySelector('[data-field="queenCells"]').checked,
+      strength: parseInt(slider.value, 10),
+      temperament: selectedTemp ? selectedTemp.dataset.temperament : record.temperament,
+      broodPattern: document.getElementById('broodPattern').value,
+      weightLeft: parseFloat(wl.value) || null,
+      weightRight: parseFloat(wr.value) || null,
+      weightTotal: parseFloat(wt.value) || null,
+      diseases: Array.from(app.querySelectorAll('[data-disease]:checked')).map(el => el.dataset.disease),
+      pests: Array.from(app.querySelectorAll('[data-pest]:checked')).map(el => el.dataset.pest),
+      notes: document.getElementById('inspNotes').value.trim(),
+      weatherConditions: document.getElementById('weatherConditions').value.trim(),
+      weatherTemp: parseFloat(document.getElementById('weatherTemp').value) || null,
+    };
+
+    const recordId = record._dvId || record.id;
+    updateInspection(recordId, updates);
+
+    // Re-lock
+    locked = true;
+    allInputs.forEach(el => el.disabled = true);
+    tempButtons.forEach(btn => btn.disabled = true);
+    lockIcon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"/>';
+    lockLabel.textContent = 'Locked';
+    lockBtn.style.color = 'var(--hive-muted)';
+    saveBar.classList.add('hidden');
+
+    // Toast
     const toast = document.createElement('div');
     toast.className = 'fixed top-20 left-1/2 -translate-x-1/2 z-[100] px-6 py-3 rounded-full text-sm font-medium animate-in';
     toast.style.cssText = 'background:var(--hive-gold);color:#0B0D0E;box-shadow:0 4px 20px rgba(212,175,55,0.3)';
-    toast.textContent = 'Inspection updated';
+    toast.textContent = 'Inspection saved';
     document.body.appendChild(toast);
     setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 300); }, 2500);
   });
