@@ -104,11 +104,27 @@ function mapTaskToDv(t) {
 }
 
 // Telemetry
-export async function fetchTelemetry() {
-  const res = await fetch(TELEMETRY_READ_URL);
+const TELEMETRY_API_URL = import.meta.env.VITE_TELEMETRY_API_URL || '';
+
+export async function fetchTelemetry(hiveId = 'Hive1', hours = 24) {
+  // Try Azure Function API first (multi-hive), fall back to legacy Logic App URL
+  const url = TELEMETRY_API_URL
+    ? `${TELEMETRY_API_URL}?hive=${encodeURIComponent(hiveId)}&hours=${hours}`
+    : TELEMETRY_READ_URL;
+  if (!url) return [];
+  const res = await fetch(url);
   if (!res.ok) throw new Error(`Telemetry fetch failed: HTTP ${res.status}`);
-  const rows = await res.json();
-  return rows.map(r => ({ weight: r.gr_weight, internalTemp: r.gr_internaltemp, batteryVoltage: r.gr_batteryvoltage, hiveHum: r.gr_hivehum, legTemp: r.gr_legtemp, timestamp: r.gr_readingtimestamp || r.createdon })).sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+  const json = await res.json();
+  // Azure Function returns { hive, hours, count, data: [...] }
+  const rows = json.data || json;
+  return rows.map(r => ({
+    weight: r.weight ?? r.gr_weight ?? 0,
+    internalTemp: r.internalTemp ?? r.gr_internaltemp ?? 0,
+    batteryVoltage: r.batteryVoltage ?? r.gr_batteryvoltage ?? 0,
+    hiveHum: r.hiveHum ?? r.gr_hivehum ?? 0,
+    legTemp: r.legTemp ?? r.gr_legtemp ?? 0,
+    timestamp: r.timestamp ?? r.gr_readingtimestamp ?? r.createdon
+  })).sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
 }
 
 export const APIARY = { name: 'Home Apiary', location: 'Kidmore End, Reading RG4 9AY, UK', lat: 51.509, lng: -0.975 };
@@ -271,7 +287,8 @@ export function addTask(text, due) { const task = { id: 't' + Date.now(), text, 
 // Devices (static until IoT connected)
 export function getDevices() {
   return [
-    { id: 'esp32-1', name: 'ESP32 Hive Scale', type: 'ESP32', location: 'Hive 5 - Survivor', status: 'Online', battery: 4.1, lastSeen: '2026-03-18T09:30:00Z', firmware: 'v1.0.0', ip: '192.168.1.45' },
+    { id: 'D4:E9:F4:8B:94:C0', name: 'IoT Hive Stand 1', type: 'ESP32', location: 'Hive 1', status: 'Online', battery: 0, lastSeen: null, firmware: 'v2.0.0', ip: '192.168.1.75', hiveId: 'Hive1' },
+    { id: 'D4:E9:F4:8A:6D:C4', name: 'IoT Hive Stand 2', type: 'ESP32', location: 'Hive 2', status: 'Online', battery: 0, lastSeen: null, firmware: 'v2.0.0', ip: '192.168.1.76', hiveId: 'Hive2' },
     { id: 'sb-inside', name: 'SwitchBot Inside', type: 'SwitchBot', location: 'Hive 5 - Survivor (inside)', status: 'Online', battery: 87, lastSeen: '2026-03-18T09:25:00Z', temp: 32.5, humidity: 68 },
     { id: 'sb-outside', name: 'SwitchBot Outside', type: 'SwitchBot', location: 'Apiary (ambient)', status: 'Online', battery: 92, lastSeen: '2026-03-18T09:28:00Z', temp: 14.2, humidity: 55 },
   ];

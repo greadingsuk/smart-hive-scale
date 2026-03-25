@@ -280,7 +280,7 @@ export async function renderApiaryDashboard(app) {
     envChart.options.scales.x = newX;
 
     try {
-      const data = await fetchTelemetry();
+      const data = await fetchTelemetry('Hive1', range.hours);
       hide('errorBanner');
 
       const filtered = data.filter(r => new Date(r.timestamp) >= cutoff);

@@ -36,13 +36,15 @@ module.exports = async function (context, req) {
     const now = new Date().toISOString();
 
     const entity = {
-        partitionKey: "Hive1",
+        partitionKey: body.HiveId || "Unknown",
         rowKey: now,
         Weight: body.Weight,
         InternalTemp: body.InternalTemp,
         BatteryVoltage: body.BatteryVoltage,
         HiveHum: body.HiveHum,
         LegTemp: body.LegTemp,
+        DeviceMAC: body.DeviceMAC || "",
+        DeviceName: body.DeviceName || "",
         ReceivedAt: now
     };
 
@@ -64,5 +66,5 @@ module.exports = async function (context, req) {
         body: JSON.stringify({ status: "OK", timestamp: now })
     };
 
-    context.log(`Telemetry stored: RowKey=${now}, Weight=${body.Weight}`);
+    context.log(`Telemetry stored: Hive=${entity.partitionKey}, Device=${entity.DeviceMAC}, Weight=${body.Weight}`);
 };

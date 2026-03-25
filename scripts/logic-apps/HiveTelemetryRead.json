@@ -23,7 +23,7 @@
         "type": "Http",
         "inputs": {
           "method": "GET",
-          "uri": "@{parameters('dataverseUrl')}/api/data/v9.2/gr_hivereadings?$orderby=gr_readingtimestamp desc&$top=500&$select=gr_weight,gr_internaltemp,gr_batteryvoltage,gr_hivehum,gr_legtemp,gr_readingtimestamp,createdon",
+          "uri": "@{parameters('dataverseUrl')}/api/data/v9.2/gr_hivereadings?$orderby=gr_readingtimestamp desc&$top=500&$select=gr_weight,gr_internaltemp,gr_batteryvoltage,gr_hivehum,gr_legtemp,gr_hiveid,gr_devicemac,gr_devicename,gr_readingtimestamp,createdon",
           "headers": { "Accept": "application/json", "OData-MaxVersion": "4.0", "OData-Version": "4.0", "Prefer": "odata.maxpagesize=500" },
           "authentication": { "type": "ActiveDirectoryOAuth", "tenant": "@parameters('tenantId')", "audience": "@parameters('dataverseUrl')", "clientId": "@parameters('clientId')", "secret": "@parameters('clientSecret')" }
         },

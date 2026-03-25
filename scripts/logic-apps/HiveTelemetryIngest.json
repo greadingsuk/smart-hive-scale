@@ -21,7 +21,10 @@
               "InternalTemp": { "type": "number" },
               "BatteryVoltage": { "type": "number" },
               "HiveHum": { "type": "number" },
-              "LegTemp": { "type": "number" }
+              "LegTemp": { "type": "number" },
+              "HiveId": { "type": "string" },
+              "DeviceMAC": { "type": "string" },
+              "DeviceName": { "type": "string" }
             }
           }
         }
@@ -41,6 +44,9 @@
             "gr_batteryvoltage": "@triggerBody()?['BatteryVoltage']",
             "gr_hivehum": "@triggerBody()?['HiveHum']",
             "gr_legtemp": "@triggerBody()?['LegTemp']",
+            "gr_hiveid": "@triggerBody()?['HiveId']",
+            "gr_devicemac": "@triggerBody()?['DeviceMAC']",
+            "gr_devicename": "@triggerBody()?['DeviceName']",
             "gr_readingtimestamp": "@utcNow()"
           },
           "authentication": { "type": "ActiveDirectoryOAuth", "tenant": "@parameters('tenantId')", "audience": "@parameters('dataverseUrl')", "clientId": "@parameters('clientId')", "secret": "@parameters('clientSecret')" }

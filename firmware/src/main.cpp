@@ -1,8 +1,9 @@
 // ============================================================
-// Smart Hive Scale — Step 2: HX711 Load Cell + Wi-Fi + POST
+// IoT Hive Stand — ESP32 Firmware
 // ============================================================
 // Sensor flow: Read HX711 → connect Wi-Fi → POST → deep sleep
 // Battery strategy: read sensors BEFORE Wi-Fi (radios off)
+// Multi-device: MAC-based auto-config from devices.h
 // ============================================================
 
 #include <Arduino.h>
@@ -11,11 +12,17 @@
 #include <HTTPClient.h>
 #include <ArduinoJson.h>
 #include <esp_bt.h>
+#include <esp_mac.h>
 #include <esp_wifi.h>
 #include <HX711.h>
 #include <OneWire.h>
 #include <DallasTemperature.h>
 #include "config.h"
+#include "devices.h"
+
+// ----- Active Device (resolved from MAC at boot) -----
+const DeviceConfig* activeDevice = nullptr;
+char deviceMAC[18] = {0};  // "AA:BB:CC:DD:EE:FF"
 
 // ----- Deep Sleep -----
 constexpr uint64_t SLEEP_DURATION_US = 15ULL * 60ULL * 1000000ULL; // 15 minutes
@@ -49,9 +56,9 @@ void killBluetooth() {
     esp_bt_controller_disable();
 }
 
-/// Configure static IP to bypass DHCP entirely.
+/// Configure static IP from the active device's registry entry.
 void configureStaticIP() {
-    IPAddress ip(STATIC_IP);
+    IPAddress ip(activeDevice->ip[0], activeDevice->ip[1], activeDevice->ip[2], activeDevice->ip[3]);
     IPAddress gateway(GATEWAY_IP);
     IPAddress subnet(SUBNET_MASK);
     IPAddress dns(DNS_IP);
@@ -171,7 +178,7 @@ float readTemperature() {
     return tempC;
 }
 
-/// Build JSON payload with sensor data.
+/// Build JSON payload with sensor data and device identity.
 String buildPayload(float weight, float tempC) {
     JsonDocument doc;
     doc["Weight"]         = weight;
@@ -179,7 +186,9 @@ String buildPayload(float weight, float tempC) {
     doc["BatteryVoltage"] = 0.0;
     doc["HiveHum"]        = 0;
     doc["LegTemp"]        = 0.0;
-    doc["HiveId"]         = HIVE_ID;
+    doc["HiveId"]         = activeDevice->hiveId;
+    doc["DeviceMAC"]      = deviceMAC;
+    doc["DeviceName"]     = activeDevice->deviceName;
 
     String json;
     serializeJson(doc, json);
@@ -231,8 +240,38 @@ void setup() {
 
     Serial.begin(115200);
 
+    // ─── Identify this device by MAC address ───
+    uint8_t mac[6];
+    esp_read_mac(mac, ESP_MAC_WIFI_STA);
+    snprintf(deviceMAC, sizeof(deviceMAC), "%02X:%02X:%02X:%02X:%02X:%02X",
+             mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+
+    activeDevice = findDeviceByMAC(mac);
+
     bootCount++;
-    Serial.printf("\n--- Hive Scale | Boot #%d ---\n", bootCount);
+    Serial.printf("\n--- IoT Hive Stand | Boot #%d ---\n", bootCount);
+    Serial.printf("MAC: %s\n", deviceMAC);
+
+    if (!activeDevice) {
+        Serial.println("\n========================================");
+        Serial.println("  UNREGISTERED DEVICE");
+        Serial.printf("  MAC: %s\n", deviceMAC);
+        Serial.println("  Add this MAC to devices.h and reflash.");
+        Serial.println("========================================\n");
+        // Blink built-in LED rapidly to indicate unregistered
+        pinMode(2, OUTPUT);
+        for (int i = 0; i < 30; i++) {
+            digitalWrite(2, !digitalRead(2));
+            delay(200);
+        }
+        enterDeepSleep();
+        return;
+    }
+
+    Serial.printf("Device: %s | Hive: %s | IP: %d.%d.%d.%d\n",
+                  activeDevice->deviceName, activeDevice->hiveId,
+                  activeDevice->ip[0], activeDevice->ip[1],
+                  activeDevice->ip[2], activeDevice->ip[3]);
 
     // Step 1: Read sensors (radios still off — saves power)
     float weight = readWeight();
