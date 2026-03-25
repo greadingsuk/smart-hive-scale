@@ -1,25 +1,91 @@
 /**
- * Apiary Dashboard — sensor data comparison across all hives.
- * This replaces the old v1 single-hive dashboard with Chart.js charts.
+ * Hive Dashboard — weight chart with IoT sensor + manual inspection data,
+ * plus temperature & environment charts.
+ *
+ * Weight data sources:
+ *   1. IoT telemetry (15-min intervals from Azure Table Storage)
+ *   2. Manual inspection weights (weightTotal from Dataverse inspections)
+ *
+ * Data is downsampled client-side per time range to keep ~60-180 points:
+ *   24h  → raw 15min       | x-axis: hour
+ *   7d   → 1h averages     | x-axis: hour
+ *   14d  → 2h averages     | x-axis: day
+ *   1m   → 6h averages     | x-axis: day
+ *   3m   → 1 day averages  | x-axis: day
+ *   6m   → 1 day averages  | x-axis: week
+ *   1y   → 1 week averages | x-axis: month
+ *   2y   → 1 week averages | x-axis: month
+ *   5y   → 1 month averages| x-axis: month
  */
 import { renderHeader } from '../components/ui.js';
-import { fetchTelemetry } from '../api/dataverse.js';
+import { fetchTelemetry, getAllActivity } from '../api/dataverse.js';
+
+// ── Time range configuration ────────────────────────────────────────────────
+const TIME_RANGES = [
+  { key: '24h',  label: '24 hours', hours: 24,       bucketMs: 0,                   xUnit: 'hour',  xFormat: 'HH:mm',        tooltipFmt: 'dd MMM HH:mm' },
+  { key: '7d',   label: '7 days',   hours: 168,      bucketMs: 3600000,             xUnit: 'hour',  xFormat: 'dd MMM HH:mm', tooltipFmt: 'dd MMM HH:mm' },
+  { key: '14d',  label: '14 days',  hours: 336,      bucketMs: 7200000,             xUnit: 'day',   xFormat: 'dd MMM',       tooltipFmt: 'dd MMM HH:mm' },
+  { key: '1m',   label: '1 month',  hours: 730,      bucketMs: 21600000,            xUnit: 'day',   xFormat: 'dd MMM',       tooltipFmt: 'dd MMM HH:mm' },
+  { key: '3m',   label: '3 months', hours: 2190,     bucketMs: 86400000,            xUnit: 'day',   xFormat: 'dd MMM',       tooltipFmt: 'dd MMM yyyy' },
+  { key: '6m',   label: '6 months', hours: 4380,     bucketMs: 86400000,            xUnit: 'week',  xFormat: 'dd MMM',       tooltipFmt: 'dd MMM yyyy' },
+  { key: '1y',   label: '1 year',   hours: 8760,     bucketMs: 604800000,           xUnit: 'month', xFormat: 'MMM yyyy',     tooltipFmt: 'dd MMM yyyy' },
+  { key: '2y',   label: '2 years',  hours: 17520,    bucketMs: 604800000,           xUnit: 'month', xFormat: 'MMM yyyy',     tooltipFmt: 'dd MMM yyyy' },
+  { key: '5y',   label: '5 years',  hours: 43800,    bucketMs: 2592000000,          xUnit: 'month', xFormat: 'MMM yyyy',     tooltipFmt: 'MMM yyyy' },
+];
+const DEFAULT_RANGE = '3m';
+
+// ── Downsampling ────────────────────────────────────────────────────────────
+function downsample(points, bucketMs) {
+  if (!bucketMs || points.length <= 200) return points;
+  const buckets = new Map();
+  for (const p of points) {
+    const key = Math.floor(p.x.getTime() / bucketMs) * bucketMs;
+    if (!buckets.has(key)) buckets.set(key, { sum: 0, count: 0 });
+    const b = buckets.get(key);
+    b.sum += p.y;
+    b.count++;
+  }
+  return Array.from(buckets.entries())
+    .map(([ts, b]) => ({ x: new Date(ts + bucketMs / 2), y: +(b.sum / b.count).toFixed(2) }))
+    .sort((a, b) => a.x - b.x);
+}
+
+// ── Manual weight extraction from inspections ───────────────────────────────
+function getManualWeights(cutoff) {
+  const activity = getAllActivity();
+  const points = [];
+  for (const a of activity) {
+    if (!a.date) continue;
+    const d = new Date(a.date);
+    if (d < cutoff) continue;
+    // Use structured weightTotal field first
+    let w = a.weightTotal;
+    // Fall back to parsing Left/Right from notes
+    if (w == null && a.weightLeft != null && a.weightRight != null) {
+      w = (Number(a.weightLeft) || 0) + (Number(a.weightRight) || 0);
+    }
+    if (w == null && a.notes) {
+      const m = a.notes.match(/Left\s+([\d.]+)\s+Right\s+([\d.]+)/i);
+      if (m) w = parseFloat(m[1]) + parseFloat(m[2]);
+    }
+    if (w != null && w > 0) points.push({ x: d, y: +Number(w).toFixed(2) });
+  }
+  return points.sort((a, b) => a.x - b.x);
+}
 
 export async function renderApiaryDashboard(app) {
   app.innerHTML = `
-    ${renderHeader('Sensor Dashboard', true)}
+    ${renderHeader('Hive Dashboard', true)}
     <main class="max-w-5xl mx-auto p-4 pb-20 md:pb-4 space-y-6">
 
       <!-- Time Range -->
-      <div class="flex items-center gap-3">
-        <select id="timeRange" class="input-field w-auto">
-          <option value="6">Last 6 hours</option>
-          <option value="24" selected>Last 24 hours</option>
-          <option value="72">Last 3 days</option>
-          <option value="168">Last 7 days</option>
-          <option value="720">Last 30 days</option>
-        </select>
-        <button id="refreshBtn" class="btn-primary flex items-center gap-2">
+      <div class="flex items-center gap-3 flex-wrap">
+        <div class="flex gap-1.5 overflow-x-auto no-scrollbar" id="rangeChips">
+          ${TIME_RANGES.map(r => `
+            <button data-range="${r.key}" class="range-chip flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${r.key === DEFAULT_RANGE ? 'bg-hive-gold/20 text-hive-gold' : 'text-hive-muted hover:text-hive-text'}" style="border:1px solid ${r.key === DEFAULT_RANGE ? 'var(--hive-gold)' : 'var(--hive-border)'}">${r.label}</button>
+          `).join('')}
+        </div>
+        <button id="refreshBtn" class="btn-primary flex items-center gap-2 ml-auto">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
           Refresh
         </button>
@@ -59,7 +125,7 @@ export async function renderApiaryDashboard(app) {
         </div>
       </section>
 
-      <!-- Charts -->
+      <!-- Weight Chart -->
       <section class="card-surface">
         <h3 class="text-sm font-semibold text-hive-muted uppercase tracking-wider mb-3">Weight</h3>
         <div id="weightSkeleton" class="w-full h-[200px] rounded-lg animate-pulse" style="background:var(--hive-border)"></div>
@@ -67,10 +133,11 @@ export async function renderApiaryDashboard(app) {
         <div id="weightEmpty" class="hidden text-center py-10">
           <svg class="w-10 h-10 mx-auto mb-2 text-hive-muted opacity-30" fill="none" stroke="currentColor" stroke-width="1" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z"/></svg>
           <p class="text-sm text-hive-muted">No weight data yet</p>
-          <p class="text-xs text-hive-muted mt-1">Connect your IoT scale to start recording</p>
+          <p class="text-xs text-hive-muted mt-1">Connect your IoT scale or record an inspection with weight</p>
         </div>
       </section>
 
+      <!-- Temperature & Environment -->
       <section class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div class="card-surface">
           <h3 class="text-sm font-semibold text-hive-muted uppercase tracking-wider mb-3">Temperature</h3>
@@ -88,12 +155,23 @@ export async function renderApiaryDashboard(app) {
     </main>
   `;
 
-  // Import Chart.js
+  // ── Chart.js setup ──────────────────────────────────────────────────────
   const { Chart, registerables } = await import('chart.js');
-  const dateAdapter = await import('chartjs-adapter-date-fns');
+  await import('chartjs-adapter-date-fns');
   Chart.register(...registerables);
 
-  const chartOpts = {
+  let activeRange = TIME_RANGES.find(r => r.key === DEFAULT_RANGE);
+
+  function buildScaleX(range) {
+    return {
+      type: 'time',
+      time: { unit: range.xUnit, displayFormats: { [range.xUnit]: range.xFormat }, tooltipFormat: range.tooltipFmt },
+      grid: { color: 'rgba(255,255,255,0.05)' },
+      ticks: { color: '#9ca3af', maxTicksLimit: 10, autoSkip: true, maxRotation: 0 },
+    };
+  }
+
+  const baseOpts = {
     responsive: true,
     maintainAspectRatio: true,
     aspectRatio: 2.5,
@@ -106,80 +184,164 @@ export async function renderApiaryDashboard(app) {
         callbacks: { title: items => new Date(items[0].parsed.x).toLocaleString() },
       },
     },
-    scales: {
-      x: { type: 'time', time: { tooltipFormat: 'dd MMM HH:mm' }, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#9ca3af', maxTicksLimit: 8 } },
-      y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#9ca3af' } },
-    },
   };
+
+  // Weight chart — two datasets: IoT line + manual scatter
+  const weightChart = new Chart(document.getElementById('weightChart'), {
+    type: 'line',
+    data: {
+      datasets: [
+        {
+          label: 'Scale Weight (kg)',
+          borderColor: '#f59e0b',
+          backgroundColor: '#f59e0b1a',
+          fill: true,
+          tension: 0.3,
+          pointRadius: 0,
+          pointHoverRadius: 4,
+          borderWidth: 2,
+          data: [],
+          order: 2,
+        },
+        {
+          label: 'Manual Weight (kg)',
+          type: 'line',
+          borderColor: 'transparent',
+          backgroundColor: '#3b82f6',
+          pointBackgroundColor: '#3b82f6',
+          pointBorderColor: '#ffffff',
+          pointBorderWidth: 2,
+          pointRadius: 6,
+          pointHoverRadius: 8,
+          pointStyle: 'circle',
+          showLine: false,
+          data: [],
+          order: 1,
+        },
+      ],
+    },
+    options: {
+      ...baseOpts,
+      scales: {
+        x: buildScaleX(activeRange),
+        y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#9ca3af' }, title: { display: true, text: 'kg', color: '#9ca3af' } },
+      },
+    },
+  });
 
   const ds = (label, color) => ({ label, borderColor: color, backgroundColor: color + '1a', fill: false, tension: 0.3, pointRadius: 0, borderWidth: 2, data: [] });
 
-  const weightChart = new Chart(document.getElementById('weightChart'), { type: 'line', data: { datasets: [{ ...ds('Weight (kg)', '#f59e0b'), fill: true }] }, options: { ...chartOpts, scales: { ...chartOpts.scales, y: { ...chartOpts.scales.y, title: { display: true, text: 'kg', color: '#9ca3af' } } } } });
-  const tempChart = new Chart(document.getElementById('tempChart'), { type: 'line', data: { datasets: [ds('Internal (°C)', '#ef4444'), ds('Leg (°C)', '#a78bfa')] }, options: { ...chartOpts, aspectRatio: 2, scales: { ...chartOpts.scales, y: { ...chartOpts.scales.y, title: { display: true, text: '°C', color: '#9ca3af' } } } } });
-  const envChart = new Chart(document.getElementById('envChart'), {
-    type: 'line', data: { datasets: [{ ...ds('Humidity (%)', '#3b82f6'), yAxisID: 'yHum' }, { ...ds('Battery (V)', '#22c55e'), yAxisID: 'yBat' }] },
-    options: { ...chartOpts, aspectRatio: 2, scales: { x: chartOpts.scales.x, yHum: { type: 'linear', position: 'left', grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#3b82f6' }, title: { display: true, text: '%', color: '#3b82f6' } }, yBat: { type: 'linear', position: 'right', grid: { drawOnChartArea: false }, ticks: { color: '#22c55e' }, title: { display: true, text: 'V', color: '#22c55e' } } } },
+  const tempChart = new Chart(document.getElementById('tempChart'), {
+    type: 'line',
+    data: { datasets: [ds('Internal (°C)', '#ef4444'), ds('Leg (°C)', '#a78bfa')] },
+    options: { ...baseOpts, aspectRatio: 2, scales: { x: buildScaleX(activeRange), y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#9ca3af' }, title: { display: true, text: '°C', color: '#9ca3af' } } } },
   });
 
-  async function refresh() {
-    const hours = parseInt(document.getElementById('timeRange').value, 10);
-    const cutoff = new Date(Date.now() - hours * 3600 * 1000);
+  const envChart = new Chart(document.getElementById('envChart'), {
+    type: 'line',
+    data: { datasets: [{ ...ds('Humidity (%)', '#3b82f6'), yAxisID: 'yHum' }, { ...ds('Battery (V)', '#22c55e'), yAxisID: 'yBat' }] },
+    options: {
+      ...baseOpts, aspectRatio: 2,
+      scales: {
+        x: buildScaleX(activeRange),
+        yHum: { type: 'linear', position: 'left', grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#3b82f6' }, title: { display: true, text: '%', color: '#3b82f6' } },
+        yBat: { type: 'linear', position: 'right', grid: { drawOnChartArea: false }, ticks: { color: '#22c55e' }, title: { display: true, text: 'V', color: '#22c55e' } },
+      },
+    },
+  });
 
-    // Hide skeletons helper
-    const hideSkeleton = (id) => { const el = document.getElementById(id); if (el) el.classList.add('hidden'); };
-    const showCanvas = (id) => { const el = document.getElementById(id); if (el) el.classList.remove('hidden'); };
+  // ── Refresh logic ─────────────────────────────────────────────────────
+  async function refresh() {
+    const cutoff = new Date(Date.now() - activeRange.hours * 3600 * 1000);
+
+    const hide = id => document.getElementById(id)?.classList.add('hidden');
+    const show = id => document.getElementById(id)?.classList.remove('hidden');
+
+    // Update x-axis for all charts
+    const newX = buildScaleX(activeRange);
+    weightChart.options.scales.x = newX;
+    tempChart.options.scales.x = newX;
+    envChart.options.scales.x = newX;
 
     try {
       const data = await fetchTelemetry();
-      document.getElementById('errorBanner').classList.add('hidden');
+      hide('errorBanner');
 
       const filtered = data.filter(r => new Date(r.timestamp) >= cutoff);
+      const manualWeights = getManualWeights(cutoff);
 
-      // Remove skeletons, show charts
-      hideSkeleton('weightSkeleton'); hideSkeleton('tempSkeleton'); hideSkeleton('envSkeleton');
+      hide('weightSkeleton'); hide('tempSkeleton'); hide('envSkeleton');
 
-      if (filtered.length > 0) {
-        showCanvas('weightChart'); showCanvas('tempChart'); showCanvas('envChart');
-        document.getElementById('weightEmpty')?.classList.add('hidden');
+      const hasIoT = filtered.length > 0;
+      const hasManual = manualWeights.length > 0;
 
-        const latest = filtered[filtered.length - 1];
-        const setVal = (id, val, dec) => { document.getElementById(id).textContent = val != null ? Number(val).toFixed(dec) : '—'; };
-        setVal('latestWeight', latest.weight, 1);
-        setVal('latestTemp', latest.internalTemp, 1);
-        setVal('latestHum', latest.hiveHum, 1);
-        setVal('latestBat', latest.batteryVoltage, 2);
-        setVal('latestLeg', latest.legTemp, 1);
+      if (hasIoT || hasManual) {
+        show('weightChart'); show('tempChart'); show('envChart');
+        hide('weightEmpty');
 
-        const secs = Math.floor((Date.now() - new Date(latest.timestamp)) / 1000);
-        document.getElementById('lastReading').textContent = secs < 60 ? `${secs}s ago` : secs < 3600 ? `${Math.floor(secs / 60)}m ago` : `${Math.floor(secs / 3600)}h ago`;
-        document.getElementById('dataPoints').textContent = `${filtered.length} pts`;
+        if (hasIoT) {
+          const latest = filtered[filtered.length - 1];
+          const setVal = (id, val, dec) => { document.getElementById(id).textContent = val != null ? Number(val).toFixed(dec) : '—'; };
+          setVal('latestWeight', latest.weight, 1);
+          setVal('latestTemp', latest.internalTemp, 1);
+          setVal('latestHum', latest.hiveHum, 1);
+          setVal('latestBat', latest.batteryVoltage, 2);
+          setVal('latestLeg', latest.legTemp, 1);
+
+          const secs = Math.floor((Date.now() - new Date(latest.timestamp)) / 1000);
+          document.getElementById('lastReading').textContent = secs < 60 ? `${secs}s ago` : secs < 3600 ? `${Math.floor(secs / 60)}m ago` : `${Math.floor(secs / 3600)}h ago`;
+          document.getElementById('dataPoints').textContent = `${filtered.length} sensor + ${manualWeights.length} manual`;
+        }
       } else {
-        // Show empty state for weight, still show (empty) charts for temp/env
-        document.getElementById('weightEmpty')?.classList.remove('hidden');
-        showCanvas('tempChart'); showCanvas('envChart');
+        show('weightEmpty');
+        show('tempChart'); show('envChart');
       }
 
-      const toPoint = (row, field) => ({ x: new Date(row.timestamp), y: row[field] });
-      weightChart.data.datasets[0].data = filtered.map(r => toPoint(r, 'weight'));
-      tempChart.data.datasets[0].data = filtered.map(r => toPoint(r, 'internalTemp'));
-      tempChart.data.datasets[1].data = filtered.map(r => toPoint(r, 'legTemp'));
-      envChart.data.datasets[0].data = filtered.map(r => toPoint(r, 'hiveHum'));
-      envChart.data.datasets[1].data = filtered.map(r => toPoint(r, 'batteryVoltage'));
+      // Build IoT weight points and downsample
+      const rawWeight = filtered.filter(r => r.weight != null).map(r => ({ x: new Date(r.timestamp), y: r.weight }));
+      weightChart.data.datasets[0].data = downsample(rawWeight, activeRange.bucketMs);
+      // Manual weights — always show as-is (never downsample)
+      weightChart.data.datasets[1].data = manualWeights;
+
+      // Temp & env — downsample too
+      const rawInternal = filtered.filter(r => r.internalTemp != null).map(r => ({ x: new Date(r.timestamp), y: r.internalTemp }));
+      const rawLeg = filtered.filter(r => r.legTemp != null).map(r => ({ x: new Date(r.timestamp), y: r.legTemp }));
+      const rawHum = filtered.filter(r => r.hiveHum != null).map(r => ({ x: new Date(r.timestamp), y: r.hiveHum }));
+      const rawBat = filtered.filter(r => r.batteryVoltage != null).map(r => ({ x: new Date(r.timestamp), y: r.batteryVoltage }));
+
+      tempChart.data.datasets[0].data = downsample(rawInternal, activeRange.bucketMs);
+      tempChart.data.datasets[1].data = downsample(rawLeg, activeRange.bucketMs);
+      envChart.data.datasets[0].data = downsample(rawHum, activeRange.bucketMs);
+      envChart.data.datasets[1].data = downsample(rawBat, activeRange.bucketMs);
+
       weightChart.update('none'); tempChart.update('none'); envChart.update('none');
     } catch (err) {
       const banner = document.getElementById('errorBanner');
       banner.textContent = `Failed to load sensor data: ${err.message}`;
-      banner.classList.remove('hidden');
+      show('errorBanner');
     }
   }
 
+  // ── Range chip handlers ───────────────────────────────────────────────
+  document.getElementById('rangeChips').addEventListener('click', e => {
+    const btn = e.target.closest('[data-range]');
+    if (!btn) return;
+    const range = TIME_RANGES.find(r => r.key === btn.dataset.range);
+    if (!range) return;
+    activeRange = range;
+    // Update chip styles
+    document.querySelectorAll('.range-chip').forEach(c => {
+      const isActive = c.dataset.range === range.key;
+      c.className = `range-chip flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${isActive ? 'bg-hive-gold/20 text-hive-gold' : 'text-hive-muted hover:text-hive-text'}`;
+      c.style.borderColor = isActive ? 'var(--hive-gold)' : 'var(--hive-border)';
+    });
+    refresh();
+  });
+
   refresh();
   const timer = setInterval(refresh, 5 * 60 * 1000);
-
-  document.getElementById('timeRange').addEventListener('change', refresh);
   document.getElementById('refreshBtn').addEventListener('click', refresh);
 
-  // Return cleanup function
   return () => {
     clearInterval(timer);
     weightChart.destroy();

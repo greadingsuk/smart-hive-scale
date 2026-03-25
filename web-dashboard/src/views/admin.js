@@ -24,7 +24,7 @@ export function renderAdmin(app) {
         </a>
         <a href="#/apiary-dashboard" class="card-surface flex flex-col items-center gap-2 py-6 text-center hover:border-hive-blue/50">
           <span class="text-3xl">📊</span>
-          <span class="text-sm font-semibold text-hive-text">Sensor Dashboard</span>
+          <span class="text-sm font-semibold text-hive-text">Hive Dashboard</span>
           <span class="text-xs text-hive-muted">Charts & Telemetry</span>
         </a>
       </section>
