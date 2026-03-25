@@ -34,6 +34,7 @@ jobs:
         run: npm run build
         env:
           VITE_TELEMETRY_READ_URL: ${{ secrets.VITE_TELEMETRY_READ_URL }}
+          VITE_TELEMETRY_API_URL: ${{ secrets.VITE_TELEMETRY_API_URL }}
           VITE_APIARY_READ_URL: ${{ secrets.VITE_APIARY_READ_URL }}
           VITE_APIARY_WRITE_URL: ${{ secrets.VITE_APIARY_WRITE_URL }}
 
