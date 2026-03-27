@@ -3,7 +3,8 @@
  */
 import { renderHeader, strengthBar, formatDate, activityBadge } from '../components/ui.js';
 import { renderHiveStack } from '../components/hive-visual.js';
-import { getHives, getHiveActivity, getCustomActivity, getHiveNote, setHiveNote, getAllActivity, splitHive, combineHives, deadOutHive, moveHive, convertHive } from '../api/dataverse.js';
+import { getHives, getHiveActivity, getCustomActivity, getHiveNote, setHiveNote, getAllActivity, splitHive, combineHives, deadOutHive, moveHive, convertHive, fetchTelemetry } from '../api/dataverse.js';
+import { fetchSwitchBot, SWITCHBOT_DEVICES } from '../api/weather.js';
 
 export async function renderHiveDashboard(app, params) {
   const hiveName = params.id;
@@ -194,6 +195,49 @@ export async function renderHiveDashboard(app, params) {
         </div>
       </div>
 
+      <!-- IoT Sensor Data -->
+      <section class="px-4 mb-4">
+        <div class="card p-5">
+          <div class="flex items-center justify-between mb-3">
+            <div class="section-subtitle">IoT Sensors</div>
+            <a href="#/apiary-dashboard" class="text-[10px] uppercase tracking-wider text-hive-gold hover:opacity-80">View Charts →</a>
+          </div>
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center" id="iotCards-${hive.id}">
+            <div class="rounded-xl p-3" style="background:var(--hive-bg)">
+              <div class="text-[10px] text-hive-muted uppercase mb-1">Hive Temp</div>
+              <div class="text-lg font-bold text-hive-text" id="iotTemp">—</div>
+              <div class="text-[10px] text-hive-muted">°C (DS18B20)</div>
+            </div>
+            <div class="rounded-xl p-3" style="background:var(--hive-bg)">
+              <div class="text-[10px] text-hive-muted uppercase mb-1">Weight</div>
+              <div class="text-lg font-bold text-hive-text" id="iotWeight">—</div>
+              <div class="text-[10px] text-hive-muted">kg (HX711)</div>
+            </div>
+            <div class="rounded-xl p-3" style="background:var(--hive-bg)">
+              <div class="text-[10px] text-hive-muted uppercase mb-1">Battery</div>
+              <div class="text-lg font-bold text-hive-text" id="iotBattery">—</div>
+              <div class="text-[10px] text-hive-muted">V</div>
+            </div>
+            <div class="rounded-xl p-3" style="background:var(--hive-bg)">
+              <div class="text-[10px] text-hive-muted uppercase mb-1">Last Seen</div>
+              <div class="text-lg font-bold text-hive-text" id="iotLastSeen">—</div>
+              <div class="text-[10px] text-hive-muted" id="iotDevice"></div>
+            </div>
+          </div>
+          <!-- SwitchBot inside sensor (Hive 5 only) -->
+          <div id="sbInsideRow" class="hidden mt-3 pt-3 border-t border-hive-border flex items-center gap-4 text-xs">
+            <span class="text-hive-muted">🌡️ Inside (SwitchBot):</span>
+            <span class="font-semibold text-hive-text" id="sbInsideTemp">—</span><span class="text-hive-muted">°C</span>
+            <span class="font-semibold text-hive-text" id="sbInsideHum">—</span><span class="text-hive-muted">%</span>
+            <span class="text-hive-muted ml-auto" id="sbInsideBat">🔋 —%</span>
+          </div>
+          <!-- Mini temp chart -->
+          <div class="mt-3 pt-3 border-t border-hive-border">
+            <canvas id="hiveMiniChart" class="w-full" style="height:120px"></canvas>
+          </div>
+        </div>
+      </section>
+
       <!-- Hive Operations -->
       <section class="px-4 mb-6">
         <h3 class="font-serif text-base font-medium text-hive-text mb-3">Hive Operations</h3>
@@ -324,6 +368,85 @@ export async function renderHiveDashboard(app, params) {
     };
     reader.readAsDataURL(file);
   });
+
+  // ── Load IoT telemetry for this hive ────────────────────────────────────
+  (async () => {
+    try {
+      const allData = await fetchTelemetry(null, 168); // 7 days
+      // Filter to this hive — match by hiveName or hive.id patterns
+      const hiveData = allData.filter(r => {
+        const rid = r.hiveId || '';
+        return rid === hiveName || rid === hive.id
+          || hiveName.toLowerCase().includes(rid.toLowerCase())
+          || rid.toLowerCase().includes(hiveName.replace(/[^a-z0-9]/gi, '').toLowerCase());
+      });
+
+      if (hiveData.length > 0) {
+        const latest = hiveData[hiveData.length - 1];
+        const set = (id, val) => { const el = document.getElementById(id); if (el && val != null) el.textContent = val; };
+
+        if (latest.internalTemp != null && latest.internalTemp > -100) set('iotTemp', latest.internalTemp.toFixed(1));
+        if (latest.weight > 0) set('iotWeight', latest.weight.toFixed(1));
+        if (latest.batteryVoltage > 0) set('iotBattery', latest.batteryVoltage.toFixed(2));
+        if (latest.deviceMAC) set('iotDevice', latest.deviceMAC);
+
+        if (latest.timestamp) {
+          const secs = Math.floor((Date.now() - new Date(latest.timestamp)) / 1000);
+          set('iotLastSeen', secs < 60 ? `${secs}s` : secs < 3600 ? `${Math.floor(secs/60)}m` : `${Math.floor(secs/3600)}h`);
+        }
+
+        // Mini temperature chart (7 days)
+        const tempPts = hiveData
+          .filter(r => r.internalTemp != null && r.internalTemp > -100)
+          .map(r => ({ x: new Date(r.timestamp), y: r.internalTemp }));
+
+        if (tempPts.length > 1) {
+          const { Chart, registerables } = await import('chart.js');
+          await import('chartjs-adapter-date-fns');
+          Chart.register(...registerables);
+
+          new Chart(document.getElementById('hiveMiniChart'), {
+            type: 'line',
+            data: {
+              datasets: [{
+                label: 'Hive Temp',
+                data: tempPts,
+                borderColor: hive.color || '#f59e0b',
+                backgroundColor: (hive.color || '#f59e0b') + '1a',
+                fill: true,
+                tension: 0.3,
+                pointRadius: 0,
+                borderWidth: 2,
+              }]
+            },
+            options: {
+              responsive: true, maintainAspectRatio: false,
+              plugins: { legend: { display: false }, tooltip: { backgroundColor: '#1a1d27', borderColor: '#2a2e3e', borderWidth: 1, titleColor: '#e4e4e7', bodyColor: '#e4e4e7' } },
+              scales: {
+                x: { type: 'time', time: { unit: 'day', tooltipFormat: 'dd MMM HH:mm', displayFormats: { day: 'dd MMM' } }, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#9ca3af', maxTicksLimit: 7 } },
+                y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#9ca3af' }, title: { display: true, text: '°C', color: '#9ca3af' } }
+              }
+            }
+          });
+        }
+      }
+    } catch (e) { /* telemetry not available */ }
+
+    // SwitchBot inside sensor — only for Hive 5
+    if (hiveName.includes('5') || hiveName.toLowerCase().includes('survivor')) {
+      try {
+        const sb = await fetchSwitchBot(SWITCHBOT_DEVICES.hive5Inside);
+        if (sb) {
+          const row = document.getElementById('sbInsideRow');
+          if (row) row.classList.remove('hidden');
+          const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+          set('sbInsideTemp', sb.temperature?.toFixed(1) ?? '—');
+          set('sbInsideHum', sb.humidity ?? '—');
+          set('sbInsideBat', `🔋 ${sb.battery ?? '—'}%`);
+        }
+      } catch { /* switchbot not available */ }
+    }
+  })();
 
   // Wire up hive operation buttons
   app.querySelector('[data-op="split"]')?.addEventListener('click', () => {
