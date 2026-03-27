@@ -4,7 +4,7 @@
 import { renderHeader, strengthBar, strengthBadge, hexRing, formatDate, activityBadge, ICON } from '../components/ui.js';
 import { renderHiveThumb } from '../components/hive-visual.js';
 import { APIARY, getHives, getArchivedHives, getActivityTimeline, getApiaryNotes, getApiaryTasks, toggleTask } from '../api/dataverse.js';
-import { fetchCurrentWeather, fetchStationWeather } from '../api/weather.js';
+import { fetchCurrentWeather, fetchStationWeather, fetchSwitchBot, SWITCHBOT_DEVICES } from '../api/weather.js';
 
 export async function renderApiary(app) {
   const hives = getHives();
@@ -80,6 +80,13 @@ export async function renderApiary(app) {
           <div class="mt-3 pt-3 border-t border-hive-border flex justify-between text-[11px] text-hive-muted">
             <span>Min <span id="stnTempMin">—</span>°C · Max <span id="stnTempMax">—</span>°C</span>
             <span>Gust <span id="stnGust">—</span> km/h</span>
+          </div>
+          <!-- SwitchBot Ambient Sensor -->
+          <div class="mt-3 pt-3 border-t border-hive-border flex items-center gap-4 text-xs">
+            <span class="text-hive-muted">🌡️ Apiary Sensor:</span>
+            <span class="font-semibold text-hive-text" id="sbTemp">—</span><span class="text-hive-muted">°C</span>
+            <span class="font-semibold text-hive-text" id="sbHum">—</span><span class="text-hive-muted">%</span>
+            <span class="text-hive-muted ml-auto" id="sbBat">🔋 —%</span>
           </div>
         </div>
       </section>
@@ -207,6 +214,15 @@ export async function renderApiary(app) {
     // Update header weather to use real station data
     const lw = document.getElementById('liveWeather');
     if (lw) lw.textContent = `${s.outdoorTemp?.toFixed(1)}\u00b0C · ${s.humidity}% · ${s.windCompass} ${s.windSpeed?.toFixed(0)} km/h`;
+  }).catch(() => {});
+
+  // Load SwitchBot apiary ambient sensor
+  fetchSwitchBot(SWITCHBOT_DEVICES.apiaryOutdoor).then(sb => {
+    if (!sb) return;
+    const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+    set('sbTemp', sb.temperature?.toFixed(1) ?? '—');
+    set('sbHum', sb.humidity ?? '—');
+    set('sbBat', `🔋 ${sb.battery ?? '—'}%`);
   }).catch(() => {});
 
   // Task checkbox — mark done and fade out from home screen

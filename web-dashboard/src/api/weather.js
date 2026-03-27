@@ -104,6 +104,41 @@ export async function fetchStationWeather() {
   }
 }
 
+/**
+ * Fetch SwitchBot sensor status via the server-side proxy.
+ * The proxy handles HMAC-SHA256 signing — frontend just does a GET.
+ */
+let cachedSwitchBot = {};
+let sbCacheTime = {};
+
+export async function fetchSwitchBot(deviceId) {
+  if (cachedSwitchBot[deviceId] && (Date.now() - (sbCacheTime[deviceId] || 0)) < CACHE_TTL) {
+    return cachedSwitchBot[deviceId];
+  }
+  try {
+    const res = await fetch(`/api/switchbot/${deviceId}`);
+    if (!res.ok) return null;
+    const json = await res.json();
+    if (json.statusCode !== 100 || !json.body) return null;
+    cachedSwitchBot[deviceId] = {
+      temperature: json.body.temperature,
+      humidity: json.body.humidity,
+      battery: json.body.battery,
+      deviceType: json.body.deviceType,
+    };
+    sbCacheTime[deviceId] = Date.now();
+    return cachedSwitchBot[deviceId];
+  } catch {
+    return null;
+  }
+}
+
+// Known SwitchBot devices at the apiary
+export const SWITCHBOT_DEVICES = {
+  apiaryOutdoor: 'F5FB699C849F',
+  hive5Inside: 'E57420633BDE',
+};
+
 function getWeatherIcon(code) {
   if (code === 0 || code === 1) return '☀️';
   if (code === 2) return '⛅';

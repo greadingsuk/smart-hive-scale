@@ -39,9 +39,15 @@ jobs:
           VITE_APIARY_READ_URL: ${{ secrets.VITE_APIARY_READ_URL }}
           VITE_APIARY_WRITE_URL: ${{ secrets.VITE_APIARY_WRITE_URL }}
 
-      - name: Create deployment package
-        working-directory: web-dashboard/dist
-        run: zip -r ../../dashboard.zip .
+      - name: Prepare deployment package
+        working-directory: web-dashboard
+        run: |
+          mkdir -p deploy/public
+          cp -r dist/* deploy/public/
+          cp server.cjs deploy/
+          cp package.json deploy/
+          cd deploy && npm install --omit=dev
+          zip -r ../../dashboard.zip .
 
       - name: Azure Login (OIDC)
         uses: azure/login@v3

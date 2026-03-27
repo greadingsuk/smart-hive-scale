@@ -17,7 +17,7 @@
  */
 import { renderHeader } from '../components/ui.js';
 import { fetchTelemetry, getAllActivity, getActiveHives, refreshDataStore } from '../api/dataverse.js';
-import { fetchStationWeather } from '../api/weather.js';
+import { fetchStationWeather, fetchSwitchBot, SWITCHBOT_DEVICES } from '../api/weather.js';
 
 const TIME_RANGES = [
   { key: '24h',  label: '24h',      hours: 24,    bucketMs: 0,         xUnit: 'hour',  tooltipFmt: 'dd MMM HH:mm' },
