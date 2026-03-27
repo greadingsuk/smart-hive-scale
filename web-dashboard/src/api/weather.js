@@ -1,7 +1,10 @@
 /**
- * Weather API — uses Open-Meteo (free, no API key required).
- * Returns current conditions for given coordinates.
+ * Weather API — fetches from multiple sources:
+ *   1. Bresser 7-in-1 weather station via AWEKAS API (Logic App proxy)
+ *   2. Open-Meteo for forecast/conditions (free, no API key)
  */
+
+const AWEKAS_URL = import.meta.env.VITE_AWEKAS_READ_URL || '';
 
 // WMO Weather interpretation codes → descriptions
 const WMO_CODES = {
@@ -15,26 +18,28 @@ const WMO_CODES = {
   95: 'Thunderstorm', 96: 'Thunderstorm + Hail', 99: 'Thunderstorm + Heavy Hail',
 };
 
+// Wind direction degrees → compass
+function windCompass(deg) {
+  const dirs = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
+  return dirs[Math.round(deg / 22.5) % 16] || '?';
+}
+
 let cachedWeather = null;
 let cacheTime = 0;
+let cachedStation = null;
+let stationCacheTime = 0;
 const CACHE_TTL = 10 * 60 * 1000; // 10 minutes
 
 /**
- * Fetch current weather for given coordinates.
- * Returns { temp, conditions, humidity, windSpeed, icon }
+ * Fetch current weather for given coordinates (Open-Meteo).
  */
 export async function fetchCurrentWeather(lat, lng) {
-  // Return cached if fresh
-  if (cachedWeather && (Date.now() - cacheTime) < CACHE_TTL) {
-    return cachedWeather;
-  }
+  if (cachedWeather && (Date.now() - cacheTime) < CACHE_TTL) return cachedWeather;
 
   const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m&timezone=auto`;
-
   const res = await fetch(url);
   if (!res.ok) throw new Error(`Weather API: HTTP ${res.status}`);
   const data = await res.json();
-
   const current = data.current;
   const code = current.weather_code;
 
@@ -46,8 +51,57 @@ export async function fetchCurrentWeather(lat, lng) {
     icon: getWeatherIcon(code),
   };
   cacheTime = Date.now();
-
   return cachedWeather;
+}
+
+/**
+ * Fetch live Bresser weather station data via AWEKAS Logic App proxy.
+ * Returns normalized object with current + daily stats, or null if unavailable.
+ */
+export async function fetchStationWeather() {
+  if (!AWEKAS_URL) return null;
+  if (cachedStation && (Date.now() - stationCacheTime) < CACHE_TTL) return cachedStation;
+
+  try {
+    const res = await fetch(AWEKAS_URL);
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (data.error || !data.current) return null;
+
+    const c = data.current;
+    const d = data.day || {};
+
+    cachedStation = {
+      // Current readings
+      outdoorTemp: c.temperature,
+      humidity: c.humidity,
+      dewpoint: c.dewpoint,
+      windSpeed: c.windspeed,
+      gustSpeed: c.gustspeed,
+      windDir: c.winddirection,
+      windCompass: windCompass(c.winddirection),
+      rain: c.precipitation,
+      rainRate: c.rainrate,
+      isRaining: c.itsraining,
+      uvIndex: c.uv,
+      solar: c.solar,
+      pressure: c.airpress_rel,
+      indoorTemp: c.indoortemperature,
+      indoorHumidity: c.indoorhumidity,
+      dataAge: Math.round((Date.now() / 1000 - c.datatimestamp) / 60), // minutes ago
+      // Daily stats
+      tempMin: d.temp_min,
+      tempMax: d.temp_max,
+      windMax: d.windspeed_max,
+      gustMax: d.gustspeed_max,
+      rain24h: d.precipitation_24h,
+      uvMax: d.uv_max,
+    };
+    stationCacheTime = Date.now();
+    return cachedStation;
+  } catch {
+    return null;
+  }
 }
 
 function getWeatherIcon(code) {

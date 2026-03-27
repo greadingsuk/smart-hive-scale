@@ -4,7 +4,7 @@
 import { renderHeader, strengthBar, strengthBadge, hexRing, formatDate, activityBadge, ICON } from '../components/ui.js';
 import { renderHiveThumb } from '../components/hive-visual.js';
 import { APIARY, getHives, getArchivedHives, getActivityTimeline, getApiaryNotes, getApiaryTasks, toggleTask } from '../api/dataverse.js';
-import { fetchCurrentWeather } from '../api/weather.js';
+import { fetchCurrentWeather, fetchStationWeather } from '../api/weather.js';
 
 export async function renderApiary(app) {
   const hives = getHives();
@@ -35,6 +35,52 @@ export async function renderApiary(app) {
           <a href="#/inspect?type=harvest" class="btn-action">${ICON.flask}<span>Harvest</span></a>
           <a href="#/inspect?type=feed" class="btn-action">${ICON.book}<span>Feed</span></a>
           <a href="#/inspect?type=treatment" class="btn-action">${ICON.heart}<span>Treat</span></a>
+        </div>
+      </section>
+
+      <!-- Weather Station (Bresser 7-in-1 via AWEKAS) -->
+      <section class="px-5 mb-6" id="stationWeather">
+        <div class="flex items-center justify-between mb-3">
+          <h2 class="section-title">Weather Station</h2>
+          <span class="text-[10px] text-hive-muted uppercase tracking-wider" id="stationAge">Loading...</span>
+        </div>
+        <div class="card p-4">
+          <div class="grid grid-cols-3 sm:grid-cols-6 gap-3 text-center text-xs">
+            <div>
+              <div class="text-hive-muted mb-1">Outdoor</div>
+              <div class="text-lg font-bold text-hive-text" id="stnTemp">—</div>
+              <div class="text-hive-muted">°C</div>
+            </div>
+            <div>
+              <div class="text-hive-muted mb-1">Humidity</div>
+              <div class="text-lg font-bold text-hive-text" id="stnHum">—</div>
+              <div class="text-hive-muted">%</div>
+            </div>
+            <div>
+              <div class="text-hive-muted mb-1">Wind</div>
+              <div class="text-lg font-bold text-hive-text" id="stnWind">—</div>
+              <div class="text-hive-muted" id="stnWindDir">km/h</div>
+            </div>
+            <div>
+              <div class="text-hive-muted mb-1">Rain 24h</div>
+              <div class="text-lg font-bold text-hive-text" id="stnRain">—</div>
+              <div class="text-hive-muted">mm</div>
+            </div>
+            <div>
+              <div class="text-hive-muted mb-1">UV</div>
+              <div class="text-lg font-bold text-hive-text" id="stnUV">—</div>
+              <div class="text-hive-muted">index</div>
+            </div>
+            <div>
+              <div class="text-hive-muted mb-1">Pressure</div>
+              <div class="text-lg font-bold text-hive-text" id="stnPressure">—</div>
+              <div class="text-hive-muted">hPa</div>
+            </div>
+          </div>
+          <div class="mt-3 pt-3 border-t border-hive-border flex justify-between text-[11px] text-hive-muted">
+            <span>Min <span id="stnTempMin">—</span>°C · Max <span id="stnTempMax">—</span>°C</span>
+            <span>Gust <span id="stnGust">—</span> km/h</span>
+          </div>
         </div>
       </section>
 
@@ -142,6 +188,26 @@ export async function renderApiary(app) {
     const el = document.getElementById('liveWeather');
     if (el) el.textContent = '\u2014';
   });
+
+  // Load Bresser weather station data
+  fetchStationWeather().then(s => {
+    if (!s) return;
+    const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+    set('stnTemp', s.outdoorTemp?.toFixed(1) ?? '—');
+    set('stnHum', s.humidity ?? '—');
+    set('stnWind', s.windSpeed?.toFixed(1) ?? '—');
+    set('stnWindDir', `${s.windCompass} km/h`);
+    set('stnRain', s.rain24h?.toFixed(1) ?? '0');
+    set('stnUV', s.uvIndex?.toFixed(1) ?? '—');
+    set('stnPressure', s.pressure?.toFixed(0) ?? '—');
+    set('stnTempMin', s.tempMin?.toFixed(1) ?? '—');
+    set('stnTempMax', s.tempMax?.toFixed(1) ?? '—');
+    set('stnGust', s.gustMax?.toFixed(1) ?? '—');
+    set('stationAge', s.dataAge <= 1 ? 'Live' : `${s.dataAge}m ago`);
+    // Update header weather to use real station data
+    const lw = document.getElementById('liveWeather');
+    if (lw) lw.textContent = `${s.outdoorTemp?.toFixed(1)}\u00b0C · ${s.humidity}% · ${s.windCompass} ${s.windSpeed?.toFixed(0)} km/h`;
+  }).catch(() => {});
 
   // Task checkbox — mark done and fade out from home screen
   document.querySelectorAll('.task-check').forEach(cb => {

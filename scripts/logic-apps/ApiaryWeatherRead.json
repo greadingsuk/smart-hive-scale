@@ -1,0 +1,62 @@
+{
+  "definition": {
+    "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+      "awekasApiKey": { "type": "SecureString" }
+    },
+    "triggers": {
+      "manual": {
+        "type": "Request",
+        "kind": "Http",
+        "inputs": {
+          "method": "GET",
+          "schema": {}
+        }
+      }
+    },
+    "actions": {
+      "Get_AWEKAS_Weather": {
+        "type": "Http",
+        "inputs": {
+          "method": "GET",
+          "uri": "https://api.awekas.at/current.php?key=@{encodeUriComponent(parameters('awekasApiKey'))}"
+        },
+        "runAfter": {}
+      },
+      "Response": {
+        "type": "Response",
+        "kind": "Http",
+        "inputs": {
+          "statusCode": 200,
+          "headers": {
+            "Content-Type": "application/json",
+            "Access-Control-Allow-Origin": "*"
+          },
+          "body": "@body('Get_AWEKAS_Weather')"
+        },
+        "runAfter": {
+          "Get_AWEKAS_Weather": ["Succeeded"]
+        }
+      },
+      "Error_Response": {
+        "type": "Response",
+        "kind": "Http",
+        "inputs": {
+          "statusCode": 502,
+          "headers": {
+            "Content-Type": "application/json",
+            "Access-Control-Allow-Origin": "*"
+          },
+          "body": {
+            "error": "Failed to fetch AWEKAS data"
+          }
+        },
+        "runAfter": {
+          "Get_AWEKAS_Weather": ["Failed"]
+        }
+      }
+    },
+    "outputs": {}
+  }
+}
