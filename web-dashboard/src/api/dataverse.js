@@ -106,25 +106,38 @@ function mapTaskToDv(t) {
 // Telemetry
 const TELEMETRY_API_URL = import.meta.env.VITE_TELEMETRY_API_URL || '';
 
-export async function fetchTelemetry(hiveId = 'Hive1', hours = 24) {
-  // Try Azure Function API first (multi-hive), fall back to legacy Logic App URL
+/**
+ * Fetch all telemetry readings (latest 500 from all hives).
+ * Each reading includes hiveId for multi-hive grouping.
+ * Filters out junk data: disconnected sensors (-127°C) and all-zero payloads.
+ */
+export async function fetchTelemetry(hiveId = null, hours = 24) {
   const url = TELEMETRY_API_URL
-    ? `${TELEMETRY_API_URL}?hive=${encodeURIComponent(hiveId)}&hours=${hours}`
+    ? `${TELEMETRY_API_URL}?hive=${encodeURIComponent(hiveId || '')}&hours=${hours}`
     : TELEMETRY_READ_URL;
   if (!url) return [];
   const res = await fetch(url);
   if (!res.ok) throw new Error(`Telemetry fetch failed: HTTP ${res.status}`);
   const json = await res.json();
-  // Azure Function returns { hive, hours, count, data: [...] }
   const rows = json.data || json;
   return rows.map(r => ({
+    hiveId: r.hiveId ?? r.gr_hiveid ?? null,
+    deviceMAC: r.deviceMAC ?? r.gr_devicemac ?? null,
     weight: r.weight ?? r.gr_weight ?? 0,
     internalTemp: r.internalTemp ?? r.gr_internaltemp ?? 0,
     batteryVoltage: r.batteryVoltage ?? r.gr_batteryvoltage ?? 0,
     hiveHum: r.hiveHum ?? r.gr_hivehum ?? 0,
     legTemp: r.legTemp ?? r.gr_legtemp ?? 0,
     timestamp: r.timestamp ?? r.gr_readingtimestamp ?? r.createdon
-  })).sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+  }))
+  .filter(r => {
+    // Exclude DS18B20 disconnected readings (-127°C)
+    if (r.internalTemp <= -100) r.internalTemp = null;
+    // Exclude completely empty payloads (no sensors connected)
+    if (r.weight === 0 && (r.internalTemp === 0 || r.internalTemp === null) && r.batteryVoltage === 0) return false;
+    return true;
+  })
+  .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
 }
 
 export const APIARY = { name: 'Home Apiary', location: 'Kidmore End, Reading RG4 9AY, UK', lat: 51.509, lng: -0.975 };
