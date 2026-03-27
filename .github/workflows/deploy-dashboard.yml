@@ -45,9 +45,7 @@ jobs:
           mkdir -p deploy/public
           cp -r dist/* deploy/public/
           cp server.cjs deploy/
-          cp package.json deploy/
-          cd deploy && npm install --omit=dev
-          zip -r ../../dashboard.zip .
+          cd deploy && zip -r ../../dashboard.zip .
 
       - name: Azure Login (OIDC)
         uses: azure/login@v3
