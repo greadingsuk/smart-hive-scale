@@ -139,7 +139,7 @@ export async function renderApiaryDashboard(app) {
       <section class="card-surface">
         <h3 class="text-sm font-semibold text-hive-muted uppercase tracking-wider mb-3">Weight</h3>
         <div id="weightSkeleton" class="w-full h-[220px] rounded-lg animate-pulse" style="background:var(--hive-border)"></div>
-        <canvas id="weightChart" class="w-full hidden"></canvas>
+        <canvas id="weightChart" class="w-full hidden" style="min-height:200px"></canvas>
         <div id="weightEmpty" class="hidden text-center py-8">
           <p class="text-sm text-hive-muted">No weight data yet</p>
           <p class="text-xs text-hive-muted mt-1">HX711 load cells arriving soon — manual inspection weights shown as dots</p>
@@ -150,14 +150,14 @@ export async function renderApiaryDashboard(app) {
       <section class="card-surface">
         <h3 class="text-sm font-semibold text-hive-muted uppercase tracking-wider mb-3">Hive Temperature</h3>
         <div id="tempSkeleton" class="w-full h-[220px] rounded-lg animate-pulse" style="background:var(--hive-border)"></div>
-        <canvas id="tempChart" class="w-full hidden"></canvas>
+        <canvas id="tempChart" class="w-full hidden" style="min-height:200px"></canvas>
       </section>
 
       <!-- Battery Chart -->
       <section class="card-surface">
         <h3 class="text-sm font-semibold text-hive-muted uppercase tracking-wider mb-3">Battery Voltage</h3>
         <div id="batSkeleton" class="w-full h-[180px] rounded-lg animate-pulse" style="background:var(--hive-border)"></div>
-        <canvas id="batChart" class="w-full hidden"></canvas>
+        <canvas id="batChart" class="w-full hidden" style="min-height:160px"></canvas>
       </section>
 
       <div id="errorBanner" class="hidden bg-hive-red/10 border border-hive-red text-hive-red p-3 rounded-xl text-center text-sm"></div>
@@ -172,21 +172,28 @@ export async function renderApiaryDashboard(app) {
   let activeRange = TIME_RANGES.find(r => r.key === DEFAULT_RANGE);
   const enabledHives = new Set(hives.map(h => h.hiveName));
 
+  // Mobile-responsive helpers
+  const isMobile = () => window.innerWidth < 640;
+  const shortName = (name) => name.replace(/^Hive \d+ - |^Nuc \d+ - /, '');
+
   function buildScaleX(range) {
     const now = new Date();
     return {
       type: 'time', min: new Date(now - range.hours * 3600000).toISOString(), max: now.toISOString(),
       time: { unit: range.xUnit, tooltipFormat: range.tooltipFmt, displayFormats: { hour: 'HH:mm', day: 'dd MMM', week: 'dd MMM', month: 'MMM yyyy' } },
       grid: { color: 'rgba(255,255,255,0.05)' },
-      ticks: { color: '#9ca3af', maxTicksLimit: 10, autoSkip: true, maxRotation: 0 },
+      ticks: { color: '#9ca3af', maxTicksLimit: isMobile() ? 5 : 10, autoSkip: true, maxRotation: 0 },
     };
   }
 
   const baseOpts = {
-    responsive: true, maintainAspectRatio: true, aspectRatio: 2.5,
+    responsive: true, maintainAspectRatio: true, aspectRatio: isMobile() ? 1.4 : 2.5,
     interaction: { mode: 'index', intersect: false },
     plugins: {
-      legend: { labels: { color: '#9ca3af', usePointStyle: true, padding: 10, boxWidth: 8 } },
+      legend: {
+        position: isMobile() ? 'top' : 'top',
+        labels: { color: '#9ca3af', usePointStyle: true, padding: isMobile() ? 6 : 10, boxWidth: 8, font: { size: isMobile() ? 10 : 12 } },
+      },
       tooltip: { backgroundColor: '#1a1d27', borderColor: '#2a2e3e', borderWidth: 1, titleColor: '#e4e4e7', bodyColor: '#e4e4e7', padding: 8 },
     },
   };
@@ -203,7 +210,7 @@ export async function renderApiaryDashboard(app) {
 
   const batChart = new Chart(document.getElementById('batChart'), {
     type: 'line', data: { datasets: [] },
-    options: { ...baseOpts, aspectRatio: 3, scales: { x: buildScaleX(activeRange), y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#9ca3af' }, title: { display: true, text: 'V', color: '#9ca3af' }, min: 3.0, max: 4.5 } } },
+    options: { ...baseOpts, aspectRatio: isMobile() ? 1.6 : 3, scales: { x: buildScaleX(activeRange), y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#9ca3af' }, title: { display: true, text: 'V', color: '#9ca3af' }, min: 3.0, max: 4.5 } } },
   });
 
   // ── Refresh ─────────────────────────────────────────────────────────
@@ -247,7 +254,7 @@ export async function renderApiaryDashboard(app) {
         const pts = readings.filter(r => r.weight > 0).map(r => ({ x: new Date(r.timestamp), y: r.weight }));
         if (pts.length > 0) {
           weightDatasets.push({
-            label: `${name} (IoT)`, borderColor: color, backgroundColor: color + '1a',
+            label: isMobile() ? shortName(name) : `${name} (IoT)`, borderColor: color, backgroundColor: color + '1a',
             fill: false, tension: 0.3, pointRadius: 0, borderWidth: 2,
             data: downsample(pts, activeRange.bucketMs), order: 5,
           });
@@ -259,7 +266,7 @@ export async function renderApiaryDashboard(app) {
         if (!enabledHives.has(hiveName)) continue;
         const color = hiveColorMap[hiveName] || '#9ca3af';
         weightDatasets.push({
-          label: hiveName, borderColor: color, backgroundColor: color,
+          label: isMobile() ? shortName(hiveName) : hiveName, borderColor: color, backgroundColor: color,
           pointBackgroundColor: color, pointBorderColor: '#fff', pointBorderWidth: 2,
           pointRadius: 5, pointHoverRadius: 7, borderWidth: 2, tension: 0.3,
           showLine: true, fill: false, data: points, order: 1,
@@ -281,7 +288,7 @@ export async function renderApiaryDashboard(app) {
           .map(r => ({ x: new Date(r.timestamp), y: r.internalTemp }));
         if (pts.length > 0) {
           tempDatasets.push({
-            label: name, borderColor: color, backgroundColor: color + '1a',
+            label: isMobile() ? shortName(name) : name, borderColor: color, backgroundColor: color + '1a',
             fill: false, tension: 0.3, pointRadius: 0, borderWidth: 2,
             data: downsample(pts, activeRange.bucketMs),
           });
@@ -301,7 +308,7 @@ export async function renderApiaryDashboard(app) {
           .map(r => ({ x: new Date(r.timestamp), y: r.batteryVoltage }));
         if (pts.length > 0) {
           batDatasets.push({
-            label: name, borderColor: color, backgroundColor: color + '1a',
+            label: isMobile() ? shortName(name) : name, borderColor: color, backgroundColor: color + '1a',
             fill: false, tension: 0.3, pointRadius: 0, borderWidth: 2,
             data: downsample(pts, activeRange.bucketMs),
           });
