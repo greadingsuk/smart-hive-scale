@@ -297,12 +297,44 @@ export function toggleTask(id) { const t = _tasks.find(x => x.id === id); if (t)
 export function deleteTask(id) { const t = _tasks.find(x => x.id === id); if (t) { t.deleted = true; writeAsync('tasks', 'update', mapTaskToDv(t), t._dvId || id); } }
 export function addTask(text, due) { const task = { id: 't' + Date.now(), text, done: false, due, deleted: false }; _tasks.unshift(task); writeAsync('tasks', 'create', mapTaskToDv(task)); }
 
-// Devices (static until IoT connected)
+// Devices — ESP32 hive stands, persisted to localStorage
+const DEVICES_KEY = 'apiary_devices';
+const DEFAULT_DEVICES = [
+  { id: 'D4:E9:F4:8B:94:C0', name: 'IoT Hive Stand 1', firmware: 'v2.0.0', ip: '192.168.1.75', hiveId: '' },
+  { id: 'D4:E9:F4:8A:6D:C4', name: 'IoT Hive Stand 2', firmware: 'v2.0.0', ip: '192.168.1.76', hiveId: '' },
+];
+
 export function getDevices() {
-  return [
-    { id: 'D4:E9:F4:8B:94:C0', name: 'IoT Hive Stand 1', type: 'ESP32', location: 'Hive 1', status: 'Online', battery: 0, lastSeen: null, firmware: 'v2.0.0', ip: '192.168.1.75', hiveId: 'Hive1' },
-    { id: 'D4:E9:F4:8A:6D:C4', name: 'IoT Hive Stand 2', type: 'ESP32', location: 'Hive 2', status: 'Online', battery: 0, lastSeen: null, firmware: 'v2.0.0', ip: '192.168.1.76', hiveId: 'Hive2' },
-    { id: 'sb-inside', name: 'SwitchBot Inside', type: 'SwitchBot', location: 'Hive 5 - Survivor (inside)', status: 'Online', battery: 87, lastSeen: '2026-03-18T09:25:00Z', temp: 32.5, humidity: 68 },
-    { id: 'sb-outside', name: 'SwitchBot Outside', type: 'SwitchBot', location: 'Apiary (ambient)', status: 'Online', battery: 92, lastSeen: '2026-03-18T09:28:00Z', temp: 14.2, humidity: 55 },
-  ];
+  try {
+    const saved = localStorage.getItem(DEVICES_KEY);
+    if (saved) return JSON.parse(saved);
+  } catch { /* fall through */ }
+  localStorage.setItem(DEVICES_KEY, JSON.stringify(DEFAULT_DEVICES));
+  return [...DEFAULT_DEVICES];
+}
+
+export function saveDevices(devices) {
+  localStorage.setItem(DEVICES_KEY, JSON.stringify(devices));
+}
+
+export function addDevice(device) {
+  const devices = getDevices();
+  devices.push(device);
+  saveDevices(devices);
+  return devices;
+}
+
+export function updateDevice(mac, updates) {
+  const devices = getDevices();
+  const idx = devices.findIndex(d => d.id === mac);
+  if (idx === -1) return devices;
+  devices[idx] = { ...devices[idx], ...updates };
+  saveDevices(devices);
+  return devices;
+}
+
+export function removeDevice(mac) {
+  const devices = getDevices().filter(d => d.id !== mac);
+  saveDevices(devices);
+  return devices;
 }

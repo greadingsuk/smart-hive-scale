@@ -20,7 +20,7 @@ export function renderAdmin(app) {
         <a href="#/devices" class="card-surface flex flex-col items-center gap-2 py-6 text-center hover:border-hive-green/50">
           <span class="text-3xl">📡</span>
           <span class="text-sm font-semibold text-hive-text">Device Health</span>
-          <span class="text-xs text-hive-muted">ESP32 & SwitchBot</span>
+          <span class="text-xs text-hive-muted">ESP32 Hive Stands</span>
         </a>
         <a href="#/apiary-dashboard" class="card-surface flex flex-col items-center gap-2 py-6 text-center hover:border-hive-blue/50">
           <span class="text-3xl">📊</span>
