@@ -65,44 +65,21 @@
     inset: 0;
     z-index: 0;
     pointer-events: none;
+    /* Corner vignette — dark fade from all edges */
     background:
-      radial-gradient(ellipse at 50% 30%, rgba(40,40,40,0.6) 0%, rgba(18,18,18,0.95) 60%, #121212 100%);
+      radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.6) 100%);
   }
   body::after { display: none; }
 
-  /* Embossed hexagon corner SVGs — rendered by hex-corners.js */
-  .hex-corner-svg {
-    position: fixed;
-    z-index: 0;
-    pointer-events: none;
-    overflow: visible;
-  }
-  .hex-corner-svg--bl {
-    bottom: 0;
-    left: 0;
-    width: 45vw;
-    height: 45vh;
-    max-width: 650px;
-    max-height: 550px;
-  }
-  .hex-corner-svg--tr {
-    top: 0;
-    right: 0;
-    width: 40vw;
-    height: 40vh;
-    max-width: 550px;
-    max-height: 450px;
-  }
-
-  /* Subtle noise grain texture */
+  /* Full-screen subtle texture overlay */
   .grain-overlay {
     position: fixed;
     inset: 0;
     z-index: 0;
     pointer-events: none;
-    opacity: 0.18;
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='256' height='256' filter='url(%23g)' opacity='1'/%3E%3C/svg%3E");
-    background-size: 256px 256px;
+    opacity: 0.22;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='256' height='256' filter='url(%23g)' opacity='1'/%3E%3C/svg%3E");
+    background-size: 200px 200px;
     mix-blend-mode: overlay;
   }
   body > * { position: relative; z-index: 1; }

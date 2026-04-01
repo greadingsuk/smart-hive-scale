@@ -8,14 +8,18 @@
 
 export const UNSPLASH_IMAGES = {
   loginBackground: {
-    // Macro honeycomb by Bianca Ackermann
+    // Close-up honey bee on flower by Dmitry Grigoriev
     url: 'https://images.unsplash.com/photo-1558642452-9d2a7deb7f62?w=1200&q=75&auto=format&fit=crop',
-    // Fallback gradient if image fails to load
+    // Fallback: try alternate bee photo, then gradient
+    urls: [
+      'https://images.unsplash.com/photo-1568526381923-caf3fd520382?w=1200&q=75&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1580748142698-e09206bb4c73?w=1200&q=75&auto=format&fit=crop',
+    ],
     fallback: 'linear-gradient(135deg, #1a1a1a 0%, #121212 100%)',
     credit: {
-      photographer: 'Bianca Ackermann',
-      profileUrl: 'https://unsplash.com/@biancablah',
-      photoId: 'photo-1558642452-9d2a7deb7f62',
+      photographer: 'Dmitry Grigoriev / Annie Spratt',
+      profileUrl: 'https://unsplash.com/@grigorievphoto',
+      photoIds: ['photo-1568526381923-caf3fd520382', 'photo-1580748142698-e09206bb4c73'],
     },
   },
 };

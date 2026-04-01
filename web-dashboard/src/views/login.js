@@ -20,13 +20,14 @@ async function hashCredentials(username, password) {
 
 export async function renderLogin(app) {
   const bgImg = UNSPLASH_IMAGES.loginBackground;
+  const imgUrls = bgImg.urls || [bgImg.url];
   app.innerHTML = `
     <div class="min-h-screen flex items-center justify-center p-5 relative overflow-hidden">
-      <!-- Unsplash background with fallback -->
+      <!-- Unsplash background with fallback chain -->
       <div class="absolute inset-0 z-0" style="background:${bgImg.fallback}">
-        <img src="${bgImg.url}" alt="" class="w-full h-full object-cover opacity-30" loading="lazy" onerror="this.style.display='none'" />
+        <img id="loginBg" src="${imgUrls[0]}" alt="" class="w-full h-full object-cover opacity-25" loading="lazy" />
       </div>
-      <div class="absolute inset-0 z-0" style="background:linear-gradient(180deg, rgba(18,18,18,0.7) 0%, rgba(18,18,18,0.95) 100%)"></div>
+      <div class="absolute inset-0 z-0" style="background:linear-gradient(180deg, rgba(18,18,18,0.6) 0%, rgba(18,18,18,0.95) 100%)"></div>
 
       <div class="w-full max-w-sm animate-in relative z-10">
         <div class="text-center mb-10">
@@ -74,4 +75,18 @@ export async function renderLogin(app) {
 
   // Focus username field
   document.getElementById('username').focus();
+
+  // Background image fallback chain
+  const bgEl = document.getElementById('loginBg');
+  if (bgEl) {
+    let attempt = 0;
+    bgEl.onerror = () => {
+      attempt++;
+      if (attempt < imgUrls.length) {
+        bgEl.src = imgUrls[attempt];
+      } else {
+        bgEl.style.display = 'none';
+      }
+    };
+  }
 }

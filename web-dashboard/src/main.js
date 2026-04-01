@@ -5,7 +5,6 @@ import './style.css';
 import { registerRoute, initRouter } from './router.js';
 import { initTheme } from './theme.js';
 import { wireDensityToggle } from './theme.js';
-import { initHexCorners } from './components/hex-corners.js';
 import { initDataStore } from './api/dataverse.js';
 import { renderLogin } from './views/login.js';
 import { renderApiarySelect } from './views/apiary-select.js';
@@ -24,9 +23,8 @@ import { renderInspectionDetail } from './views/inspection-detail.js';
 import { renderHiveArchive } from './views/hive-archive.js';
 import { renderHiveArchiveDetail } from './views/hive-archive-detail.js';
 
-// Init theme & embossed hex corners before first render
+// Init theme before first render
 initTheme();
-initHexCorners();
 
 // Register routes
 registerRoute('#/login', renderLogin);
