@@ -71,15 +71,17 @@
   }
   body::after { display: none; }
 
-  /* Full-screen subtle texture overlay */
+  /* Full-screen dark plaster texture (Unsplash) + vignette */
   .grain-overlay {
     position: fixed;
     inset: 0;
     z-index: 0;
     pointer-events: none;
-    opacity: 0.22;
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='256' height='256' filter='url(%23g)' opacity='1'/%3E%3C/svg%3E");
-    background-size: 200px 200px;
+    opacity: 0.4;
+    background-image: url('https://images.unsplash.com/photo-1585314062340-f1a5a7c9328d?w=800&q=30&auto=format&fit=crop');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
     mix-blend-mode: overlay;
   }
   body > * { position: relative; z-index: 1; }

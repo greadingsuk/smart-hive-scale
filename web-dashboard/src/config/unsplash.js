@@ -22,4 +22,13 @@ export const UNSPLASH_IMAGES = {
       photoIds: ['photo-1568526381923-caf3fd520382', 'photo-1580748142698-e09206bb4c73'],
     },
   },
+  backgroundTexture: {
+    // Dark plaster texture by Annie Spratt — used as full-screen bg overlay
+    url: 'https://images.unsplash.com/photo-1585314062340-f1a5a7c9328d?w=800&q=30&auto=format&fit=crop',
+    credit: {
+      photographer: 'Annie Spratt',
+      profileUrl: 'https://unsplash.com/@anniespratt',
+      photoId: 'photo-1585314062340-f1a5a7c9328d',
+    },
+  },
 };
