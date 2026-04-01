@@ -13,7 +13,7 @@ $subId = "e7401b5d-1ce7-4ee2-999a-249758af59ab"
 $rg = "rg-gr-personal-hivescale"
 $scriptDir = $PSScriptRoot
 
-foreach ($name in @("HiveTelemetryIngest","HiveTelemetryRead")) {
+foreach ($name in @("HiveTelemetryIngest","HiveTelemetryRead","ApiaryReadAPI","ApiaryWriteAPI")) {
     Write-Host "Updating $name..." -ForegroundColor Cyan
     $uri = "https://management.azure.com/subscriptions/$subId/resourceGroups/$rg/providers/Microsoft.Logic/workflows/${name}?api-version=2019-05-01"
     $current = Invoke-RestMethod -Uri $uri -Headers $h

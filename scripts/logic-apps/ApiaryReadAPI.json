@@ -114,6 +114,27 @@
                 "runAfter": { "Get_Tasks": ["Succeeded"] }
               }
             }
+          },
+          "devices": {
+            "case": "devices",
+            "actions": {
+              "Get_Devices": {
+                "type": "Http",
+                "inputs": {
+                  "method": "GET",
+                  "uri": "@{parameters('dataverseUrl')}/api/data/v9.2/gr_devices?$orderby=gr_name",
+                  "headers": { "Accept": "application/json", "OData-MaxVersion": "4.0", "OData-Version": "4.0", "Prefer": "odata.maxpagesize=5000" },
+                  "authentication": { "type": "ActiveDirectoryOAuth", "tenant": "@parameters('tenantId')", "audience": "@parameters('dataverseUrl')", "clientId": "@parameters('clientId')", "secret": "@parameters('clientSecret')" }
+                },
+                "runAfter": {}
+              },
+              "Response_Devices": {
+                "type": "Response",
+                "kind": "Http",
+                "inputs": { "statusCode": 200, "headers": { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }, "body": "@body('Get_Devices')?['value']" },
+                "runAfter": { "Get_Devices": ["Succeeded"] }
+              }
+            }
           }
         },
         "default": {
@@ -121,7 +142,7 @@
             "Response_BadEntity": {
               "type": "Response",
               "kind": "Http",
-              "inputs": { "statusCode": 400, "headers": { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }, "body": { "error": "Unknown entity. Use: hives, inspections, notes, tasks" } },
+              "inputs": { "statusCode": 400, "headers": { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }, "body": { "error": "Unknown entity. Use: hives, inspections, notes, tasks, devices" } },
               "runAfter": {}
             }
           }

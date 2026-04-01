@@ -2,7 +2,7 @@
  * Device Health page — ESP32 hive stand management + live telemetry status.
  */
 import { renderHeader, formatDate } from '../components/ui.js';
-import { getDevices, saveDevices, addDevice, removeDevice, getHives, fetchTelemetry } from '../api/dataverse.js';
+import { getDevices, addDevice, updateDevice, removeDevice, getHives, fetchTelemetry } from '../api/dataverse.js';
 
 export async function renderDevices(app) {
   const devices = getDevices();
@@ -36,7 +36,7 @@ export async function renderDevices(app) {
     };
   }
 
-  const enriched = devices.map(d => ({ ...d, ...deviceStatus(d.id) }));
+  const enriched = devices.map(d => ({ ...d, ...deviceStatus(d.mac) }));
   const onlineCount = enriched.filter(d => d.status === 'Online').length;
   const offlineCount = enriched.filter(d => d.status === 'Offline' || d.status === 'No Data').length;
 
@@ -77,7 +77,7 @@ export async function renderDevices(app) {
                 </div>
                 <div>
                   <div class="text-sm font-semibold text-hive-text">${d.name}</div>
-                  <div class="text-[11px] text-hive-muted font-mono">${d.id}</div>
+                  <div class="text-[11px] text-hive-muted font-mono">${d.mac}</div>
                 </div>
               </div>
               <span class="pill ${statusColor}">
@@ -109,15 +109,15 @@ export async function renderDevices(app) {
             <!-- Hive Assignment -->
             <div class="flex items-center justify-between bg-hive-bg rounded-lg p-3">
               <div class="text-xs text-hive-muted uppercase tracking-wider">Assigned Hive</div>
-              <select data-device-idx="${i}" class="device-hive-select bg-hive-surface border border-hive-border rounded-lg px-3 py-1.5 text-sm text-hive-text focus:outline-none focus:border-hive-gold">
+              <select data-device-id="${d.id}" class="device-hive-select bg-hive-surface border border-hive-border rounded-lg px-3 py-1.5 text-sm text-hive-text focus:outline-none focus:border-hive-gold">
                 <option value="">Unassigned</option>
-                ${hives.map(h => `<option value="${h.hiveName}" ${d.hiveId === h.hiveName || d.hiveId === h.id ? 'selected' : ''}>${h.hiveName}</option>`).join('')}
+                ${hives.map(h => `<option value="${h.hiveName}" ${d.hiveId === h.hiveName ? 'selected' : ''}>${h.hiveName}</option>`).join('')}
               </select>
             </div>
 
             <!-- Remove Device -->
             <div class="mt-3 flex justify-end">
-              <button data-remove-mac="${d.id}" class="text-[10px] text-hive-muted hover:text-hive-red uppercase tracking-wider transition-colors">Remove Device</button>
+              <button data-remove-id="${d.id}" class="text-[10px] text-hive-muted hover:text-hive-red uppercase tracking-wider transition-colors">Remove Device</button>
             </div>
           </div>`;
         }).join('')}
@@ -245,22 +245,21 @@ export async function renderDevices(app) {
     });
   }
 
-  // Wire hive assignment dropdowns
+  // Wire hive assignment dropdowns — save to Dataverse
   app.querySelectorAll('.device-hive-select').forEach(sel => {
     sel.addEventListener('change', () => {
-      const idx = parseInt(sel.dataset.deviceIdx);
-      const devs = getDevices();
-      devs[idx].hiveId = sel.value;
-      saveDevices(devs);
+      const deviceId = sel.dataset.deviceId;
+      updateDevice(deviceId, { hiveId: sel.value });
     });
   });
 
   // Wire remove device buttons
-  app.querySelectorAll('[data-remove-mac]').forEach(btn => {
+  app.querySelectorAll('[data-remove-id]').forEach(btn => {
     btn.addEventListener('click', () => {
-      const mac = btn.dataset.removeMac;
-      if (confirm(`Remove device ${mac}?`)) {
-        removeDevice(mac);
+      const id = btn.dataset.removeId;
+      const dev = devices.find(d => d.id === id);
+      if (confirm(`Remove device ${dev?.name || id}?`)) {
+        removeDevice(id);
         renderDevices(app);
       }
     });
@@ -283,7 +282,7 @@ export async function renderDevices(app) {
     const fw = document.getElementById('devFW').value.trim();
     if (!name || !mac) return;
 
-    addDevice({ id: mac, name, firmware: fw || 'v2.0.0', ip: ip || '', hiveId: '' });
+    addDevice({ name, mac, firmware: fw || 'v2.0.0', ip: ip || '', hiveId: '' });
     renderDevices(app);
   });
 }

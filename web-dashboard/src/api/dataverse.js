@@ -16,19 +16,22 @@ let _hives = [];
 let _inspections = [];
 let _notes = [];
 let _tasks = [];
+let _devices = [];
 let _dataLoaded = false;
 
 export async function initDataStore() {
   if (_dataLoaded) return;
   try {
-    const [hives, inspections, notes, tasks] = await Promise.all([
+    const [hives, inspections, notes, tasks, devices] = await Promise.all([
       fetchEntity('hives'), fetchEntity('inspections'),
       fetchEntity('notes'), fetchEntity('tasks'),
+      fetchEntity('devices').catch(() => []),
     ]);
     _hives = hives.map(mapHiveFromDv);
     _inspections = inspections.map(mapInspectionFromDv).sort((a, b) => new Date(b.date) - new Date(a.date));
     _notes = notes.map(mapNoteFromDv);
     _tasks = tasks.map(mapTaskFromDv);
+    _devices = devices.map(mapDeviceFromDv);
     _dataLoaded = true;
   } catch (err) {
     console.error('Failed to load from Dataverse:', err);
@@ -39,14 +42,16 @@ export function isDataLoaded() { return _dataLoaded; }
 
 export async function refreshDataStore() {
   try {
-    const [hives, inspections, notes, tasks] = await Promise.all([
+    const [hives, inspections, notes, tasks, devices] = await Promise.all([
       fetchEntity('hives'), fetchEntity('inspections'),
       fetchEntity('notes'), fetchEntity('tasks'),
+      fetchEntity('devices').catch(() => []),
     ]);
     _hives = hives.map(mapHiveFromDv);
     _inspections = inspections.map(mapInspectionFromDv).sort((a, b) => new Date(b.date) - new Date(a.date));
     _notes = notes.map(mapNoteFromDv);
     _tasks = tasks.map(mapTaskFromDv);
+    _devices = devices.map(mapDeviceFromDv);
   } catch (err) {
     console.error('Failed to refresh from Dataverse:', err);
   }
@@ -297,44 +302,45 @@ export function toggleTask(id) { const t = _tasks.find(x => x.id === id); if (t)
 export function deleteTask(id) { const t = _tasks.find(x => x.id === id); if (t) { t.deleted = true; writeAsync('tasks', 'update', mapTaskToDv(t), t._dvId || id); } }
 export function addTask(text, due) { const task = { id: 't' + Date.now(), text, done: false, due, deleted: false }; _tasks.unshift(task); writeAsync('tasks', 'create', mapTaskToDv(task)); }
 
-// Devices — ESP32 hive stands, persisted to localStorage
-const DEVICES_KEY = 'apiary_devices';
-const DEFAULT_DEVICES = [
-  { id: 'D4:E9:F4:8B:94:C0', name: 'IoT Hive Stand 1', firmware: 'v2.0.0', ip: '192.168.1.75', hiveId: '' },
-  { id: 'D4:E9:F4:8A:6D:C4', name: 'IoT Hive Stand 2', firmware: 'v2.0.0', ip: '192.168.1.76', hiveId: '' },
-];
-
-export function getDevices() {
-  try {
-    const saved = localStorage.getItem(DEVICES_KEY);
-    if (saved) return JSON.parse(saved);
-  } catch { /* fall through */ }
-  localStorage.setItem(DEVICES_KEY, JSON.stringify(DEFAULT_DEVICES));
-  return [...DEFAULT_DEVICES];
+// Devices — ESP32 hive stands, stored in Dataverse (gr_device)
+function mapDeviceFromDv(d) {
+  return {
+    id: d.gr_deviceid,
+    name: d.gr_name || '',
+    mac: d.gr_macaddress || '',
+    ip: d.gr_ipaddress || '',
+    firmware: d.gr_firmware || '',
+    hiveId: d.gr_assignedhive || '',
+  };
+}
+function mapDeviceToDv(d) {
+  return {
+    gr_name: d.name,
+    gr_macaddress: d.mac,
+    gr_ipaddress: d.ip,
+    gr_firmware: d.firmware,
+    gr_assignedhive: d.hiveId || '',
+  };
 }
 
-export function saveDevices(devices) {
-  localStorage.setItem(DEVICES_KEY, JSON.stringify(devices));
-}
+export function getDevices() { return _devices; }
 
 export function addDevice(device) {
-  const devices = getDevices();
-  devices.push(device);
-  saveDevices(devices);
-  return devices;
+  device.id = device.id || 'dev-' + Date.now();
+  _devices.push(device);
+  writeAsync('devices', 'create', mapDeviceToDv(device));
+  return device;
 }
 
-export function updateDevice(mac, updates) {
-  const devices = getDevices();
-  const idx = devices.findIndex(d => d.id === mac);
-  if (idx === -1) return devices;
-  devices[idx] = { ...devices[idx], ...updates };
-  saveDevices(devices);
-  return devices;
+export function updateDevice(id, updates) {
+  const idx = _devices.findIndex(d => d.id === id);
+  if (idx === -1) return null;
+  _devices[idx] = { ..._devices[idx], ...updates };
+  writeAsync('devices', 'update', mapDeviceToDv(_devices[idx]), id);
+  return _devices[idx];
 }
 
-export function removeDevice(mac) {
-  const devices = getDevices().filter(d => d.id !== mac);
-  saveDevices(devices);
-  return devices;
+export function removeDevice(id) {
+  _devices = _devices.filter(d => d.id !== id);
+  writeAsync('devices', 'delete', null, id);
 }

@@ -33,7 +33,7 @@
           "variables": [{
             "name": "entitySet",
             "type": "string",
-            "value": "@if(equals(triggerBody()?['entity'],'hives'),'gr_hives',if(equals(triggerBody()?['entity'],'inspections'),'gr_inspections',if(equals(triggerBody()?['entity'],'notes'),'gr_notes',if(equals(triggerBody()?['entity'],'tasks'),'gr_tasks','unknown'))))"
+            "value": "@if(equals(triggerBody()?['entity'],'hives'),'gr_hives',if(equals(triggerBody()?['entity'],'inspections'),'gr_inspections',if(equals(triggerBody()?['entity'],'notes'),'gr_notes',if(equals(triggerBody()?['entity'],'tasks'),'gr_tasks',if(equals(triggerBody()?['entity'],'devices'),'gr_devices','unknown')))))"
           }]
         },
         "runAfter": {}
@@ -44,7 +44,7 @@
           "variables": [{
             "name": "idField",
             "type": "string",
-            "value": "@if(equals(triggerBody()?['entity'],'hives'),'gr_hiveid',if(equals(triggerBody()?['entity'],'inspections'),'gr_inspectionid',if(equals(triggerBody()?['entity'],'notes'),'gr_noteid',if(equals(triggerBody()?['entity'],'tasks'),'gr_taskid','unknown'))))"
+            "value": "@if(equals(triggerBody()?['entity'],'hives'),'gr_hiveid',if(equals(triggerBody()?['entity'],'inspections'),'gr_inspectionid',if(equals(triggerBody()?['entity'],'notes'),'gr_noteid',if(equals(triggerBody()?['entity'],'tasks'),'gr_taskid',if(equals(triggerBody()?['entity'],'devices'),'gr_deviceid','unknown')))))"
           }]
         },
         "runAfter": { "EntityMap": ["Succeeded"] }
