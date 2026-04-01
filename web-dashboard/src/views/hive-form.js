@@ -3,6 +3,7 @@
  */
 import { renderHeader } from '../components/ui.js';
 import { renderHiveStack } from '../components/hive-visual.js';
+import { openCropModal } from '../components/image-crop.js';
 import { getHiveById, addHive, updateHive, deleteHive, BREED_OPTIONS, HIVE_TYPES, COMPONENT_TYPES, QUEEN_SOURCES, QUEEN_COLORS } from '../api/dataverse.js';
 
 export function renderHiveForm(app, params) {
@@ -213,23 +214,14 @@ export function renderHiveForm(app, params) {
     if (!file) return;
     const reader = new FileReader();
     reader.onload = () => {
-      const img = new Image();
-      img.onload = () => {
-        const size = Math.min(img.width, img.height);
-        const canvas = document.createElement('canvas');
-        canvas.width = 300; canvas.height = 300;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, (img.width - size) / 2, (img.height - size) / 2, size, size, 0, 0, 300, 300);
-        queenImageData = canvas.toDataURL('image/jpeg', 0.8);
-        const imgEl = document.querySelector('#queenImageBtn')?.closest('.relative')?.querySelector('img, div');
-        if (imgEl) {
-          const container = document.querySelector('#queenImageBtn').closest('.relative');
-          const existing = container.querySelector('img');
-          if (existing) { existing.src = queenImageData; }
-          else { container.querySelector('div')?.remove(); const newImg = document.createElement('img'); newImg.src = queenImageData; newImg.className = 'w-full h-full object-cover'; newImg.alt = 'Queen'; container.prepend(newImg); }
-        }
-      };
-      img.src = reader.result;
+      openCropModal(reader.result, (dataUrl) => {
+        if (!dataUrl) return;
+        queenImageData = dataUrl;
+        const container = document.querySelector('#queenImageBtn').closest('.relative');
+        const existing = container.querySelector('img');
+        if (existing) { existing.src = queenImageData; }
+        else { container.querySelector('div')?.remove(); const newImg = document.createElement('img'); newImg.src = queenImageData; newImg.className = 'w-full h-full object-cover'; newImg.alt = 'Queen'; container.prepend(newImg); }
+      });
     };
     reader.readAsDataURL(file);
   });

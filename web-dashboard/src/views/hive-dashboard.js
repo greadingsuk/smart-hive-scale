@@ -3,6 +3,7 @@
  */
 import { renderHeader, strengthBar, formatDate, activityBadge } from '../components/ui.js';
 import { renderHiveStack } from '../components/hive-visual.js';
+import { openCropModal } from '../components/image-crop.js';
 import { getHives, getHiveActivity, getCustomActivity, getHiveNote, setHiveNote, getAllActivity, splitHive, combineHives, deadOutHive, moveHive, convertHive, fetchTelemetry } from '../api/dataverse.js';
 import { fetchSwitchBot, SWITCHBOT_DEVICES } from '../api/weather.js';
 
@@ -350,21 +351,11 @@ export async function renderHiveDashboard(app, params) {
     if (!file) return;
     const reader = new FileReader();
     reader.onload = () => {
-      // Crop to square via canvas
-      const img = new Image();
-      img.onload = () => {
-        const size = Math.min(img.width, img.height);
-        const canvas = document.createElement('canvas');
-        canvas.width = 300; canvas.height = 300;
-        const ctx = canvas.getContext('2d');
-        const sx = (img.width - size) / 2;
-        const sy = (img.height - size) / 2;
-        ctx.drawImage(img, sx, sy, size, size, 0, 0, 300, 300);
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+      openCropModal(reader.result, (dataUrl) => {
+        if (!dataUrl) return;
         updateHive(hive.id, { queenImage: dataUrl });
         renderHiveDashboard(app, params);
-      };
-      img.src = reader.result;
+      });
     };
     reader.readAsDataURL(file);
   });
