@@ -3,7 +3,6 @@
  */
 import { renderHeader, strengthBar, formatDate, activityBadge } from '../components/ui.js';
 import { renderHiveStack } from '../components/hive-visual.js';
-import { openCropModal } from '../components/image-crop.js';
 import { getHives, getHiveActivity, getCustomActivity, getHiveNote, setHiveNote, getAllActivity, splitHive, combineHives, deadOutHive, moveHive, convertHive, fetchTelemetry } from '../api/dataverse.js';
 import { fetchSwitchBot, SWITCHBOT_DEVICES } from '../api/weather.js';
 
@@ -342,22 +341,14 @@ export async function renderHiveDashboard(app, params) {
     renderHiveDashboard(app, params);
   });
 
-  // Wire up queen image upload
-  document.getElementById('queenImageBtn')?.addEventListener('click', () => {
-    document.getElementById('queenImageInput')?.click();
-  });
-  document.getElementById('queenImageInput')?.addEventListener('change', (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      openCropModal(reader.result, (dataUrl) => {
-        if (!dataUrl) return;
-        updateHive(hive.id, { queenImage: dataUrl });
-        renderHiveDashboard(app, params);
-      });
-    };
-    reader.readAsDataURL(file);
+  // Wire up queen image lightbox (tap thumbnail to enlarge)
+  document.getElementById('queenImageThumb')?.addEventListener('click', () => {
+    if (!hive.queenImage) return;
+    const overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.92);display:flex;align-items:center;justify-content:center;cursor:pointer;';
+    overlay.innerHTML = `<img src="${hive.queenImage}" style="max-width:90vw;max-height:85vh;border-radius:12px;object-fit:contain;" alt="Queen">`;
+    overlay.addEventListener('click', () => overlay.remove());
+    document.body.appendChild(overlay);
   });
 
   // ── Load IoT telemetry for this hive ────────────────────────────────────
