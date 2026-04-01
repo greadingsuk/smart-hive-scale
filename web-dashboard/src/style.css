@@ -26,28 +26,7 @@
     color-scheme: dark;
   }
 
-  /* ── Light: Cream & Gilt ── */
-  :root.light {
-    --hive-bg: #F0EDE6;
-    --hive-surface: #FFFFFF;
-    --hive-surface-hover: #F7F6F3;
-    --hive-border: rgba(0,0,0,0.10);
-    --hive-gold: #9E7C2B;
-    --hive-gold-dim: #866A25;
-    --hive-sage: #4A5D4E;
-    --hive-text: #1A1814;
-    --hive-muted: #7D756A;
-    --hive-blue: #4A7398;
-    --hive-red: #A0403D;
-    --hive-warm-bg: #FBF7ED;
-    --hive-warm-text: #6B5518;
-    --hive-shadow: 0 1px 4px rgba(0,0,0,0.06);
-    --hive-shadow-hover: 0 4px 12px rgba(0,0,0,0.10);
-    --hive-glow: none;
-    --hive-scrollbar: #D8D4CC;
-    --marble-opacity: 1;
-    color-scheme: light;
-  }
+
 
   ::-webkit-scrollbar { width: 3px; height: 3px; }
   ::-webkit-scrollbar-track { background: transparent; }
@@ -108,15 +87,7 @@
     background-size: 256px 256px;
     mix-blend-mode: overlay;
   }
-  :root.light .grain-overlay { opacity: 0.06; mix-blend-mode: multiply; }
   body > * { position: relative; z-index: 1; }
-  :root.light body {
-    background-image: none;
-  }
-  :root.light body::before {
-    display: block;
-    background: radial-gradient(ellipse at 55% 45%, rgba(245,240,230,0.3) 0%, rgba(235,228,215,0.6) 50%, rgba(225,218,205,0.9) 100%);
-  }
 
   /* ── App header — theme-aware ── */
   .app-header {
@@ -124,20 +95,8 @@
     -webkit-backdrop-filter: blur(16px);
     backdrop-filter: blur(16px);
   }
-  :root.light .app-header {
-    background: rgba(255,255,255,0.88);
-    -webkit-backdrop-filter: blur(12px);
-    backdrop-filter: blur(12px);
-  }
-
-  /* ── Light mode FAB bar ── */
-  :root.light .fab-bar {
-    background: rgba(255,255,255,0.92);
-    box-shadow: 0 -2px 12px rgba(0,0,0,0.06);
-  }
-
   * { transition: none; }
-  .card, .card-surface, .card-warm, .btn-primary, .btn-secondary, .btn-action, .pill, .input-field, .login-input, .toggle-track, .toggle-knob, .accordion-content, .accordion-trigger .chevron, .timeline-dot, .strength-fill, a, button, select, .theme-knob {
+  .card, .card-surface, .card-warm, .btn-primary, .btn-secondary, .btn-action, .pill, .input-field, .login-input, .toggle-track, .toggle-knob, .accordion-content, .accordion-trigger .chevron, .timeline-dot, .strength-fill, a, button, select {
     transition-property: color, background-color, border-color, opacity, box-shadow, transform;
     transition-duration: 200ms;
     transition-timing-function: ease;
@@ -356,9 +315,5 @@
     box-shadow: 0 -4px 20px rgba(0,0,0,0.3);
     -webkit-backdrop-filter: blur(16px);
     backdrop-filter: blur(16px);
-  }
-  :root.light .fab-bar {
-    background: rgba(255,255,255,0.92);
-    box-shadow: 0 -2px 12px rgba(0,0,0,0.06);
   }
 }

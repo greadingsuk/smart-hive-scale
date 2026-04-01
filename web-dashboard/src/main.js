@@ -3,7 +3,7 @@
  */
 import './style.css';
 import { registerRoute, initRouter } from './router.js';
-import { initTheme, wireThemeToggle } from './theme.js';
+import { initTheme } from './theme.js';
 import { initHexCorners } from './components/hex-corners.js';
 import { initDataStore } from './api/dataverse.js';
 import { renderLogin } from './views/login.js';
@@ -43,11 +43,7 @@ registerRoute('#/inspection/:id', renderInspectionDetail);
 registerRoute('#/archive', renderHiveArchive);
 registerRoute('#/archive/:id', renderHiveArchiveDetail);
 
-// Wire theme toggle after each route change
-window.addEventListener('hashchange', () => setTimeout(wireThemeToggle, 50));
-
 // Load data from Dataverse, then start router
 initDataStore().then(() => {
   initRouter('#/login');
-  setTimeout(wireThemeToggle, 100);
 });
