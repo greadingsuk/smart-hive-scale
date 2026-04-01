@@ -3,7 +3,7 @@
  */
 import { renderHeader } from '../components/ui.js';
 import { renderHiveThumb } from '../components/hive-visual.js';
-import { APIARY, getHives } from '../api/dataverse.js';
+import { APIARY, getHives, getArchivedHives } from '../api/dataverse.js';
 
 export function renderAdmin(app) {
   const hives = getHives();
@@ -52,17 +52,17 @@ export function renderAdmin(app) {
         </div>
       </section>
 
-      <!-- Manage Hives -->
+      <!-- Manage Hives — Live -->
       <section>
         <div class="flex items-center justify-between mb-3">
-          <h2 class="text-sm font-semibold text-hive-muted uppercase tracking-wider">Hives & Nucs</h2>
+          <h2 class="text-sm font-semibold text-hive-muted uppercase tracking-wider">Live Hives & Nucs</h2>
           <a href="#/hive-form/new" class="btn-primary text-xs py-1.5 px-3 flex items-center gap-1">
             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
             Add Hive
           </a>
         </div>
         <div class="space-y-2">
-          ${hives.map(h => `
+          ${hives.filter(h => h.status === 'Active').map(h => `
             <div class="card-surface flex items-center justify-between">
               <div class="flex items-center gap-3">
                 <div class="w-12 h-14 rounded-lg overflow-hidden flex items-center justify-center" style="background: linear-gradient(135deg, ${h.color}15, ${h.color}05)">
@@ -73,7 +73,6 @@ export function renderAdmin(app) {
                   <div class="flex items-center gap-2 mt-0.5">
                     <span class="text-xs text-hive-muted">${h.beeType}</span>
                     ${h.hiveStyle ? `<span class="text-xs text-hive-muted">${h.hiveStyle}</span>` : ''}
-                    <span class="text-xs ${h.status === 'Active' ? 'text-hive-green' : 'text-hive-muted'}">${h.status}</span>
                   </div>
                 </div>
               </div>
@@ -90,6 +89,40 @@ export function renderAdmin(app) {
           `).join('')}
         </div>
       </section>
+
+      <!-- Manage Hives — Archived -->
+      ${getArchivedHives().length > 0 ? `
+      <section>
+        <div class="flex items-center justify-between mb-3">
+          <h2 class="text-sm font-semibold text-hive-muted uppercase tracking-wider">Archived</h2>
+          <a href="#/archive" class="text-xs text-hive-muted hover:text-hive-gold transition-colors uppercase tracking-wider">View Archive →</a>
+        </div>
+        <div class="space-y-2">
+          ${getArchivedHives().map(h => `
+            <div class="card-surface flex items-center justify-between opacity-60">
+              <div class="flex items-center gap-3">
+                <div class="w-12 h-14 rounded-lg overflow-hidden flex items-center justify-center" style="background: linear-gradient(135deg, ${h.color}15, ${h.color}05)">
+                  ${renderHiveThumb(h.components, h.color)}
+                </div>
+                <div>
+                  <div class="text-sm font-medium">${h.hiveName}</div>
+                  <div class="flex items-center gap-2 mt-0.5">
+                    <span class="text-xs text-hive-muted">${h.beeType}</span>
+                    ${h.hiveStyle ? `<span class="text-xs text-hive-muted">${h.hiveStyle}</span>` : ''}
+                    <span class="text-xs text-hive-muted">Archived</span>
+                  </div>
+                </div>
+              </div>
+              <div class="flex items-center gap-2">
+                <a href="#/hive-form/${h.id}" class="p-1.5 text-hive-muted hover:text-hive-amber transition-colors" title="Edit">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                </a>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      </section>
+      ` : ''}
 
       <!-- Account -->
       <section>

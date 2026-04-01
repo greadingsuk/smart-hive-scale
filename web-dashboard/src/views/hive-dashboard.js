@@ -231,8 +231,8 @@ export async function renderHiveDashboard(app, params) {
             <span class="font-semibold text-hive-text" id="sbInsideHum">—</span><span class="text-hive-muted">%</span>
             <span class="text-hive-muted ml-auto" id="sbInsideBat">🔋 —%</span>
           </div>
-          <!-- Mini temp chart -->
-          <div class="mt-3 pt-3 border-t border-hive-border">
+          <!-- Mini temp chart (hidden until data loads) -->
+          <div id="miniChartWrapper" class="mt-3 pt-3 border-t border-hive-border hidden">
             <canvas id="hiveMiniChart" class="w-full" style="height:120px"></canvas>
           </div>
         </div>
@@ -401,6 +401,7 @@ export async function renderHiveDashboard(app, params) {
           .map(r => ({ x: new Date(r.timestamp), y: r.internalTemp }));
 
         if (tempPts.length > 1) {
+          document.getElementById('miniChartWrapper')?.classList.remove('hidden');
           const { Chart, registerables } = await import('chart.js');
           await import('chartjs-adapter-date-fns');
           Chart.register(...registerables);
