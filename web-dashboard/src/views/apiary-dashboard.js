@@ -78,7 +78,7 @@ export async function renderApiaryDashboard(app) {
   const hives = getActiveHives();
   const hiveColorMap = {};
   hives.forEach((h, i) => { hiveColorMap[h.hiveName] = h.color || FALLBACK_COLORS[i % FALLBACK_COLORS.length]; });
-  // Map HiveId (e.g. "Hive1") to hiveName (e.g. "Hive 1 - Obsidian")
+  // Map HiveId (e.g. "Hive1") to hiveName (e.g. "H1 - Obsidian")
   // For now, use hiveId directly if no match
   const hiveIdToName = {};
   const hiveIdToColor = {};
@@ -90,6 +90,17 @@ export async function renderApiaryDashboard(app) {
       hiveIdToColor[pid] = h.color || FALLBACK_COLORS[i % FALLBACK_COLORS.length];
     }
   });
+
+  // Flexible name matching — maps old inspection hive names to current hive names
+  // e.g. "Hive 1 - Obsidian" → "H1 - Obsidian" (matches by suffix after prefix strip)
+  function resolveHiveName(inspectionName) {
+    if (enabledHives.has(inspectionName)) return inspectionName;
+    const suffix = shortName(inspectionName).toLowerCase();
+    for (const current of enabledHives) {
+      if (shortName(current).toLowerCase() === suffix) return current;
+    }
+    return inspectionName;
+  }
 
   app.innerHTML = `
     ${renderHeader('Apiary Dashboard', true)}
@@ -130,7 +141,7 @@ export async function renderApiaryDashboard(app) {
           const color = h.color || FALLBACK_COLORS[i % FALLBACK_COLORS.length];
           return `<button data-hive="${h.hiveName}" class="hive-toggle flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium" style="border:2px solid ${color};background:${color}1a;color:${color}">
             <span class="w-2 h-2 rounded-full" style="background:${color}"></span>
-            ${h.hiveName.replace(/^Hive \d+ - |^Nuc \d+ - /, '')}
+            ${h.hiveName.replace(/^(?:Hive|Nuc|H|N)\s*\d+\s*-\s*/i, '')}
           </button>`;
         }).join('')}
       </div>
@@ -174,7 +185,7 @@ export async function renderApiaryDashboard(app) {
 
   // Mobile-responsive helpers
   const isMobile = () => window.innerWidth < 640;
-  const shortName = (name) => name.replace(/^Hive \d+ - |^Nuc \d+ - /, '');
+  const shortName = (name) => name.replace(/^(?:Hive|Nuc|H|N)\s*\d+\s*-\s*/i, '');
 
   function buildScaleX(range) {
     const now = new Date();
@@ -261,8 +272,9 @@ export async function renderApiaryDashboard(app) {
         }
       }
 
-      // Manual inspection weights per hive
-      for (const [hiveName, points] of manualByHive) {
+      // Manual inspection weights per hive — resolve old names to current
+      for (const [rawHiveName, points] of manualByHive) {
+        const hiveName = resolveHiveName(rawHiveName);
         if (!enabledHives.has(hiveName)) continue;
         const color = hiveColorMap[hiveName] || '#9ca3af';
         weightDatasets.push({
