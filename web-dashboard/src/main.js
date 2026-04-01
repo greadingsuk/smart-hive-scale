@@ -4,9 +4,11 @@
 import './style.css';
 import { registerRoute, initRouter } from './router.js';
 import { initTheme } from './theme.js';
+import { wireDensityToggle } from './theme.js';
 import { initHexCorners } from './components/hex-corners.js';
 import { initDataStore } from './api/dataverse.js';
 import { renderLogin } from './views/login.js';
+import { renderApiarySelect } from './views/apiary-select.js';
 import { renderApiary } from './views/apiary.js';
 import { renderHiveDashboard } from './views/hive-dashboard.js';
 import { renderApiaryDashboard } from './views/apiary-dashboard.js';
@@ -28,6 +30,7 @@ initHexCorners();
 
 // Register routes
 registerRoute('#/login', renderLogin);
+registerRoute('#/apiary-select', renderApiarySelect);
 registerRoute('#/apiary', renderApiary);
 registerRoute('#/hive/:id', renderHiveDashboard);
 registerRoute('#/apiary-dashboard', renderApiaryDashboard);
@@ -43,7 +46,11 @@ registerRoute('#/inspection/:id', renderInspectionDetail);
 registerRoute('#/archive', renderHiveArchive);
 registerRoute('#/archive/:id', renderHiveArchiveDetail);
 
+// Wire density toggle after each route change
+window.addEventListener('hashchange', () => setTimeout(wireDensityToggle, 50));
+
 // Load data from Dataverse, then start router
 initDataStore().then(() => {
   initRouter('#/login');
+  setTimeout(wireDensityToggle, 100);
 });

@@ -40,6 +40,7 @@ export function strengthBadge(percent) {
 export function renderHeader(title, showBack = false, showAdmin = false, backUrl = '#/apiary') {
   const currentHash = window.location.hash;
   const isAdminActive = currentHash.startsWith('#/admin') || currentHash.startsWith('#/devices');
+  const densityLabel = document.documentElement.classList.contains('density-compact') ? 'Compact' : 'Comfortable';
   return `
     <header class="app-header px-5 py-3 sticky top-0 z-50" style="border-bottom: 1px solid var(--hive-border);">
       <div class="max-w-6xl mx-auto flex items-center justify-between">
@@ -49,11 +50,15 @@ export function renderHeader(title, showBack = false, showAdmin = false, backUrl
           </a>` : ''}
           <h1 class="font-serif text-lg font-medium text-hive-text" style="letter-spacing:-0.02em">${title}</h1>
         </div>
-        <div class="flex items-center gap-0.5">
+        <div class="flex items-center gap-1">
+          <button data-density-toggle class="p-2 text-hive-muted hover:text-hive-gold flex items-center gap-1" title="Toggle density">
+            <svg class="w-[15px] h-[15px]" fill="none" stroke="currentColor" stroke-width="1.25" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/></svg>
+            <span data-density-label class="text-[9px] uppercase tracking-wider hidden sm:inline">${densityLabel}</span>
+          </button>
           ${showAdmin ? `<a href="#/admin" class="p-2 ${isAdminActive ? 'text-hive-gold' : 'text-hive-muted hover:text-hive-gold'}" title="Settings">
             <svg class="w-[17px] h-[17px]" fill="none" stroke="currentColor" stroke-width="1.25" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
           </a>` : ''}
-          <button onclick="sessionStorage.removeItem('hive_user'); window.location.hash='#/login'" class="p-2 text-hive-muted hover:text-hive-red" title="Sign out">
+          <button onclick="sessionStorage.removeItem('hive_user'); sessionStorage.removeItem('active_apiary'); window.location.hash='#/login'" class="p-2 text-hive-muted hover:text-hive-red" title="Sign out">
             <svg class="w-[17px] h-[17px]" fill="none" stroke="currentColor" stroke-width="1.25" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
           </button>
         </div>

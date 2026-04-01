@@ -24,8 +24,14 @@ export function initRouter(defaultHash = '#/login') {
       window.location.hash = '#/login';
       return;
     }
+    // Logged-in user on login page → send to apiary select
     if (user && hash === '#/login') {
-      window.location.hash = '#/apiary';
+      window.location.hash = '#/apiary-select';
+      return;
+    }
+    // Logged-in user going to main app without selecting apiary → redirect
+    if (user && hash !== '#/apiary-select' && !sessionStorage.getItem('active_apiary')) {
+      window.location.hash = '#/apiary-select';
       return;
     }
 

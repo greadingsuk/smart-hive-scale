@@ -3,30 +3,48 @@
 @tailwind utilities;
 
 @layer base {
-  /* ── Dark: Deep Ocean & Gold Leaf ── */
+  /* ── V2: Rally Surfaces + Honey Accent ── */
   :root {
-    --hive-bg: #0C1929;
-    --hive-surface: #112240;
-    --hive-surface-hover: #162b50;
-    --hive-border: rgba(212,175,55,0.10);
-    --hive-gold: #D4AF37;
-    --hive-gold-dim: #B8962E;
-    --hive-sage: #5C7461;
-    --hive-text: #F5F0E8;
-    --hive-muted: #8A9BB0;
-    --hive-blue: #6B8BA4;
-    --hive-red: #C0504D;
-    --hive-warm-bg: #14253A;
-    --hive-warm-text: #D4AF37;
-    --hive-shadow: 0 2px 8px rgba(0,0,0,0.4);
-    --hive-shadow-hover: 0 4px 16px rgba(0,0,0,0.5);
-    --hive-glow: 0 0 20px rgba(212,175,55,0.06);
-    --hive-scrollbar: #1A3050;
-    --marble-opacity: 0;
+    --hive-bg: #121212;
+    --hive-surface: #1E1E1E;
+    --hive-surface-hover: #2A2A2A;
+    --hive-border: rgba(255,255,255,0.08);
+    --hive-gold: #F5C518;
+    --hive-gold-dim: #C9A013;
+    --hive-sage: #66BB6A;
+    --hive-text: #E8E8E8;
+    --hive-muted: #9E9E9E;
+    --hive-blue: #64B5F6;
+    --hive-red: #EF5350;
+    --hive-warm-bg: #1A1A1A;
+    --hive-warm-text: #F5C518;
+    --hive-shadow: 0 1px 3px rgba(0,0,0,0.5);
+    --hive-shadow-hover: 0 4px 12px rgba(0,0,0,0.6);
+    --hive-glow: 0 0 16px rgba(245,197,24,0.08);
+    --hive-scrollbar: #333;
+    --hive-radius: 12px;
     color-scheme: dark;
+
+    /* Density — comfortable (default) */
+    --density-card-px: 1.25rem;
+    --density-card-py: 1.25rem;
+    --density-gap: 0.75rem;
+    --density-section-px: 1.25rem;
+    --density-text-sm: 0.875rem;
+    --density-text-xs: 0.75rem;
+    --density-label: 10px;
   }
 
-
+  /* ── Compact density ── */
+  :root.density-compact {
+    --density-card-px: 0.75rem;
+    --density-card-py: 0.75rem;
+    --density-gap: 0.5rem;
+    --density-section-px: 0.75rem;
+    --density-text-sm: 0.8125rem;
+    --density-text-xs: 0.6875rem;
+    --density-label: 9px;
+  }
 
   ::-webkit-scrollbar { width: 3px; height: 3px; }
   ::-webkit-scrollbar-track { background: transparent; }
@@ -48,7 +66,7 @@
     z-index: 0;
     pointer-events: none;
     background:
-      radial-gradient(ellipse at 55% 45%, rgba(22,45,75,0.5) 0%, rgba(12,25,41,0.92) 50%, rgba(6,12,22,1) 100%);
+      radial-gradient(ellipse at 50% 30%, rgba(40,40,40,0.6) 0%, rgba(18,18,18,0.95) 60%, #121212 100%);
   }
   body::after { display: none; }
 
@@ -76,30 +94,41 @@
     max-height: 450px;
   }
 
-  /* Subtle paper grain texture */
+  /* Subtle noise grain texture */
   .grain-overlay {
     position: fixed;
     inset: 0;
     z-index: 0;
     pointer-events: none;
-    opacity: 0.35;
+    opacity: 0.18;
     background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='256' height='256' filter='url(%23g)' opacity='1'/%3E%3C/svg%3E");
     background-size: 256px 256px;
     mix-blend-mode: overlay;
   }
   body > * { position: relative; z-index: 1; }
 
-  /* ── App header — theme-aware ── */
+  /* ── App header ── */
   .app-header {
-    background: rgba(17,34,64,0.85);
+    background: rgba(30,30,30,0.88);
     -webkit-backdrop-filter: blur(16px);
     backdrop-filter: blur(16px);
   }
+
+  /* ── Transitions ── */
   * { transition: none; }
   .card, .card-surface, .card-warm, .btn-primary, .btn-secondary, .btn-action, .pill, .input-field, .login-input, .toggle-track, .toggle-knob, .accordion-content, .accordion-trigger .chevron, .timeline-dot, .strength-fill, a, button, select {
     transition-property: color, background-color, border-color, opacity, box-shadow, transform;
     transition-duration: 200ms;
     transition-timing-function: ease;
+  }
+
+  /* ── Focus-visible — accessible, unmistakable ── */
+  *:focus-visible {
+    outline: 2px solid var(--hive-gold);
+    outline-offset: 2px;
+  }
+  input:focus-visible, select:focus-visible, textarea:focus-visible {
+    outline-offset: 0;
   }
 
   /* ── Tabular figures for numeric data ── */
@@ -119,11 +148,13 @@
 }
 
 @layer components {
-  /* ── Cards — shadow-defined, not border-defined ── */
+  /* ── Cards — Rally-style layered surfaces ── */
   .card {
-    @apply bg-hive-surface rounded-xl p-5;
+    @apply bg-hive-surface p-5;
+    border-radius: var(--hive-radius);
     box-shadow: var(--hive-shadow);
     border: 1px solid var(--hive-border);
+    padding: var(--density-card-py) var(--density-card-px);
   }
   .card:hover {
     box-shadow: var(--hive-shadow-hover);
@@ -132,23 +163,25 @@
   .card-surface { @apply card; }
   .card-warm {
     background: var(--hive-warm-bg);
-    @apply rounded-xl p-5;
+    border-radius: var(--hive-radius);
     box-shadow: var(--hive-shadow);
     border: 1px solid var(--hive-border);
     color: var(--hive-text);
+    padding: var(--density-card-py) var(--density-card-px);
   }
 
-  /* ── Buttons — pill-shaped, refined ── */
+  /* ── Buttons — pill-shaped, honey accent ── */
   .btn-primary {
     @apply font-medium px-6 py-2.5 rounded-full transition-all;
-    background: #B0903D;
-    color: #0B0D0E;
+    background: var(--hive-gold);
+    color: #121212;
     font-family: 'DM Sans', sans-serif;
     letter-spacing: 0.06em;
-    font-size: 12px;
+    font-size: var(--density-label);
     text-transform: uppercase;
+    font-weight: 600;
   }
-  .btn-primary:hover { filter: brightness(1.12); transform: scale(0.98); }
+  .btn-primary:hover { background: var(--hive-gold-dim); transform: scale(0.98); }
   .btn-primary:active { transform: scale(0.96); }
 
   .btn-secondary {
@@ -156,7 +189,7 @@
     border-color: var(--hive-border);
     font-family: 'DM Sans', sans-serif;
     letter-spacing: 0.06em;
-    font-size: 12px;
+    font-size: var(--density-label);
     text-transform: uppercase;
   }
   .btn-secondary:hover { border-color: var(--hive-gold); color: var(--hive-gold); }
@@ -168,26 +201,28 @@
     box-shadow: var(--hive-shadow);
     color: var(--hive-gold);
     font-family: 'DM Sans', sans-serif;
-    font-size: 10px;
+    font-size: var(--density-label);
     font-weight: 500;
     letter-spacing: 0.1em;
     text-transform: uppercase;
+    border-radius: var(--hive-radius);
   }
   .btn-action:hover { box-shadow: var(--hive-glow), var(--hive-shadow-hover); transform: translateY(-1px); }
   .btn-action:active { transform: scale(0.97); }
 
-  /* ── Pills ── */
+  /* ── Pills — tinted chips ── */
   .pill {
-    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-medium;
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full font-medium;
     font-family: 'DM Sans', sans-serif;
     text-transform: uppercase;
     letter-spacing: 0.08em;
+    font-size: var(--density-label);
   }
-  .pill-amber { @apply pill; background: rgba(212,175,55,0.1); color: var(--hive-gold); }
-  .pill-green { @apply pill; background: rgba(92,116,97,0.15); color: var(--hive-sage); }
-  .pill-blue  { @apply pill; background: rgba(107,139,164,0.12); color: var(--hive-blue); }
-  .pill-red   { @apply pill; background: rgba(192,80,77,0.1); color: var(--hive-red); }
-  .pill-orange { @apply pill; background: rgba(212,175,55,0.08); color: var(--hive-gold); }
+  .pill-amber { @apply pill; background: rgba(245,197,24,0.12); color: var(--hive-gold); }
+  .pill-green { @apply pill; background: rgba(102,187,106,0.12); color: var(--hive-sage); }
+  .pill-blue  { @apply pill; background: rgba(100,181,246,0.12); color: var(--hive-blue); }
+  .pill-red   { @apply pill; background: rgba(239,83,80,0.12); color: var(--hive-red); }
+  .pill-orange { @apply pill; background: rgba(245,197,24,0.08); color: var(--hive-gold); }
 
   /* ── Inputs — underline style (for forms) ── */
   .input-field {
@@ -215,9 +250,10 @@
     @apply absolute left-3.5 w-[18px] h-[18px] text-hive-muted pointer-events-none;
   }
   .login-input {
-    @apply w-full py-3 pl-11 pr-4 text-hive-text rounded-xl focus:outline-none;
+    @apply w-full py-3 pl-11 pr-4 text-hive-text focus:outline-none;
     background: rgba(255,255,255,0.06);
     border: 1px solid rgba(255,255,255,0.10);
+    border-radius: var(--hive-radius);
     font-family: 'DM Sans', sans-serif;
     font-size: 14px;
     -webkit-backdrop-filter: blur(8px);
@@ -227,7 +263,7 @@
   .login-input:focus {
     border-color: var(--hive-gold);
     background: rgba(255,255,255,0.09);
-    box-shadow: 0 0 0 3px rgba(212,175,55,0.12);
+    box-shadow: 0 0 0 3px rgba(245,197,24,0.15);
   }
 
   /* ── Metric card (large serif number + label) ── */
@@ -310,9 +346,9 @@
   /* ── FAB bar ── */
   .fab-bar {
     @apply fixed bottom-0 left-0 right-0 z-50 py-2.5 px-4;
-    background: rgba(17,34,64,0.85);
+    background: rgba(30,30,30,0.88);
     border-top: 1px solid var(--hive-border);
-    box-shadow: 0 -4px 20px rgba(0,0,0,0.3);
+    box-shadow: 0 -4px 20px rgba(0,0,0,0.4);
     -webkit-backdrop-filter: blur(16px);
     backdrop-filter: blur(16px);
   }

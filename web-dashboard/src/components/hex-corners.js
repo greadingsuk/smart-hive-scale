@@ -90,7 +90,7 @@ function buildSVG(w, h, hexes, hexR, id) {
   diffuse.setAttribute('surfaceScale', '6');
   diffuse.setAttribute('diffuseConstant', '0.7');
   diffuse.setAttribute('result', 'diffuse');
-  diffuse.setAttribute('lighting-color', isLight ? '#c8b890' : '#4a6a8a');
+  diffuse.setAttribute('lighting-color', isLight ? '#c8b890' : '#555555');
   const diffuseLight = document.createElementNS(ns, 'feDistantLight');
   diffuseLight.setAttribute('azimuth', '315');
   diffuseLight.setAttribute('elevation', '25');
@@ -103,7 +103,7 @@ function buildSVG(w, h, hexes, hexR, id) {
   specular.setAttribute('specularConstant', '0.4');
   specular.setAttribute('specularExponent', '20');
   specular.setAttribute('result', 'specular');
-  specular.setAttribute('lighting-color', isLight ? '#e8dcc0' : '#8ab4d8');
+  specular.setAttribute('lighting-color', isLight ? '#e8dcc0' : '#888888');
   const specLight = document.createElementNS(ns, 'feDistantLight');
   specLight.setAttribute('azimuth', '315');
   specLight.setAttribute('elevation', '30');
@@ -169,14 +169,14 @@ function buildSVG(w, h, hexes, hexR, id) {
     // Shadow layer
     const shadowPath = document.createElementNS(ns, 'path');
     shadowPath.setAttribute('d', hexPath(x, y, hexR * 0.92));
-    shadowPath.setAttribute('fill', isLight ? 'rgba(180,165,140,0.3)' : 'rgba(8,16,28,0.7)');
+    shadowPath.setAttribute('fill', isLight ? 'rgba(180,165,140,0.3)' : 'rgba(0,0,0,0.6)');
     shadowPath.setAttribute('filter', `url(#shadow-${id})`);
     g.appendChild(shadowPath);
 
     // Main filled hexagon
     const filled = document.createElementNS(ns, 'path');
     filled.setAttribute('d', hexPath(x, y, hexR * 0.92));
-    filled.setAttribute('fill', isLight ? 'rgba(215,205,185,0.6)' : 'rgba(14,28,48,0.85)');
+    filled.setAttribute('fill', isLight ? 'rgba(215,205,185,0.6)' : 'rgba(30,30,30,0.85)');
     filled.setAttribute('filter', `url(#emboss-${id})`);
     g.appendChild(filled);
 

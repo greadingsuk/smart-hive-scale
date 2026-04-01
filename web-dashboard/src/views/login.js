@@ -3,6 +3,7 @@
  * No plaintext credentials stored in source code.
  * TODO: Move to Dataverse table lookup via Power Automate flow.
  */
+import { UNSPLASH_IMAGES } from '../config/unsplash.js';
 
 // SHA-256 hashes of valid credentials (username:password)
 // To generate a new hash: echo -n 'username:password' | sha256sum
@@ -18,9 +19,16 @@ async function hashCredentials(username, password) {
 }
 
 export async function renderLogin(app) {
+  const bgImg = UNSPLASH_IMAGES.loginBackground;
   app.innerHTML = `
-    <div class="min-h-screen flex items-center justify-center p-5 hex-bg">
-      <div class="w-full max-w-sm animate-in">
+    <div class="min-h-screen flex items-center justify-center p-5 relative overflow-hidden">
+      <!-- Unsplash background with fallback -->
+      <div class="absolute inset-0 z-0" style="background:${bgImg.fallback}">
+        <img src="${bgImg.url}" alt="" class="w-full h-full object-cover opacity-30" loading="lazy" onerror="this.style.display='none'" />
+      </div>
+      <div class="absolute inset-0 z-0" style="background:linear-gradient(180deg, rgba(18,18,18,0.7) 0%, rgba(18,18,18,0.95) 100%)"></div>
+
+      <div class="w-full max-w-sm animate-in relative z-10">
         <div class="text-center mb-10">
           <img src="/bee-logo.png" alt="Apiary Hub" class="w-48 h-auto mx-auto drop-shadow-2xl" />
         </div>
@@ -56,7 +64,7 @@ export async function renderLogin(app) {
     const hash = await hashCredentials(username, password);
     if (VALID_CREDENTIAL_HASHES.includes(hash)) {
       sessionStorage.setItem('hive_user', JSON.stringify({ name: username.charAt(0).toUpperCase() + username.slice(1), role: 'admin' }));
-      window.location.hash = '#/apiary';
+      window.location.hash = '#/apiary-select';
     } else {
       const errEl = document.getElementById('loginError');
       errEl.textContent = 'Invalid username or password';
