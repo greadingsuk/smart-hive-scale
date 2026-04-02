@@ -25,7 +25,7 @@
               "HiveId": { "type": "string" },
               "DeviceMAC": { "type": "string" },
               "DeviceName": { "type": "string" },
-              "FirmwareVersion": { "type": "integer" }
+              "FirmwareVersion": { "type": "string" }
             }
           }
         }

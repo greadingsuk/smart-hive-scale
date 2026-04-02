@@ -30,7 +30,7 @@
 #include "devices.h"
 
 // ----- Firmware Version (for OTA) -----
-constexpr int FIRMWARE_VERSION = 1;
+#define FIRMWARE_VERSION "1.0.0"
 
 // ----- Active Device (resolved from MAC at boot) -----
 const DeviceConfig* activeDevice = nullptr;
@@ -407,17 +407,30 @@ int getCachedCount() {
 // OTA Firmware Update (Pull-based)
 // ============================================================
 
+/// Compare two semver strings (e.g. "1.2.3"). Returns:
+///   -1 if a < b, 0 if equal, 1 if a > b.
+int compareSemver(const char* a, const char* b) {
+    int aMaj = 0, aMin = 0, aPat = 0;
+    int bMaj = 0, bMin = 0, bPat = 0;
+    sscanf(a, "%d.%d.%d", &aMaj, &aMin, &aPat);
+    sscanf(b, "%d.%d.%d", &bMaj, &bMin, &bPat);
+    if (aMaj != bMaj) return (aMaj < bMaj) ? -1 : 1;
+    if (aMin != bMin) return (aMin < bMin) ? -1 : 1;
+    if (aPat != bPat) return (aPat < bPat) ? -1 : 1;
+    return 0;
+}
+
 /// Check for a newer firmware version and self-update if available.
 /// Call only when Wi-Fi is connected.
 void checkOTA() {
 #ifdef OTA_VERSION_URL
-    Serial.printf("OTA: Checking for updates (current v%d)...\n", FIRMWARE_VERSION);
+    Serial.printf("OTA: Checking for updates (current v%s)...\n", FIRMWARE_VERSION);
 
     WiFiClientSecure client;
     client.setInsecure();
     HTTPClient http;
 
-    // Step 1: Fetch remote version number
+    // Step 1: Fetch remote version string
     http.begin(client, OTA_VERSION_URL);
     http.setTimeout(10000);
     int code = http.GET();
@@ -426,17 +439,16 @@ void checkOTA() {
         http.end();
         return;
     }
-    String verStr = http.getString();
-    verStr.trim();
-    int remoteVersion = verStr.toInt();
+    String remoteVer = http.getString();
+    remoteVer.trim();
     http.end();
 
-    if (remoteVersion <= FIRMWARE_VERSION) {
-        Serial.printf("OTA: Up to date (remote v%d)\n", remoteVersion);
+    if (compareSemver(remoteVer.c_str(), FIRMWARE_VERSION) <= 0) {
+        Serial.printf("OTA: Up to date (remote v%s)\n", remoteVer.c_str());
         return;
     }
 
-    Serial.printf("OTA: New version v%d available! Downloading...\n", remoteVersion);
+    Serial.printf("OTA: New version v%s available! Downloading...\n", remoteVer.c_str());
 
     // Step 2: Download and flash the binary
     http.begin(client, OTA_BINARY_URL);
@@ -476,7 +488,7 @@ void checkOTA() {
         return;
     }
 
-    Serial.printf("OTA: Success! v%d → v%d. Rebooting...\n", FIRMWARE_VERSION, remoteVersion);
+    Serial.printf("OTA: Success! v%s -> v%s. Rebooting...\n", FIRMWARE_VERSION, remoteVer.c_str());
     delay(500);
     ESP.restart();
 #endif
