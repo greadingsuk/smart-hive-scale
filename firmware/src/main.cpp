@@ -264,6 +264,7 @@ String buildPayload(float weight, float tempC, float batteryV) {
     doc["HiveId"]         = activeDevice->hiveId;
     doc["DeviceMAC"]      = deviceMAC;
     doc["DeviceName"]     = activeDevice->deviceName;
+    doc["FirmwareVersion"] = FIRMWARE_VERSION;
 
     String json;
     serializeJson(doc, json);
@@ -321,6 +322,7 @@ String buildTimestampedPayload(float weight, float tempC, float batteryV) {
     doc["HiveId"]         = activeDevice->hiveId;
     doc["DeviceMAC"]      = deviceMAC;
     doc["DeviceName"]     = activeDevice->deviceName;
+    doc["FirmwareVersion"] = FIRMWARE_VERSION;
 
     // Estimate timestamp from last known UTC + missed cycles
     if (lastKnownUTC > 0) {

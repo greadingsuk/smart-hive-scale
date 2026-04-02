@@ -24,7 +24,8 @@
               "LegTemp": { "type": "number" },
               "HiveId": { "type": "string" },
               "DeviceMAC": { "type": "string" },
-              "DeviceName": { "type": "string" }
+              "DeviceName": { "type": "string" },
+              "FirmwareVersion": { "type": "integer" }
             }
           }
         }
@@ -35,7 +36,7 @@
         "type": "Http",
         "inputs": {
           "method": "GET",
-          "uri": "@{parameters('dataverseUrl')}/api/data/v9.2/gr_devices?$filter=gr_macaddress eq '@{triggerBody()?['DeviceMAC']}'&$select=gr_assignedhive&$top=1",
+          "uri": "@{parameters('dataverseUrl')}/api/data/v9.2/gr_devices?$filter=gr_macaddress eq '@{triggerBody()?['DeviceMAC']}'&$select=gr_assignedhive,gr_deviceid&$top=1",
           "headers": { "Accept": "application/json", "OData-MaxVersion": "4.0", "OData-Version": "4.0" },
           "authentication": { "type": "ActiveDirectoryOAuth", "tenant": "@parameters('tenantId')", "audience": "@parameters('dataverseUrl')", "clientId": "@parameters('clientId')", "secret": "@parameters('clientSecret')" }
         },
@@ -74,6 +75,20 @@
         },
         "runAfter": { "Resolve_HiveId": ["Succeeded"] }
       },
+      "Update_Device_Firmware": {
+        "type": "Http",
+        "inputs": {
+          "method": "PATCH",
+          "uri": "@{parameters('dataverseUrl')}/api/data/v9.2/gr_devices(@{first(body('Lookup_Device_By_MAC')?['value'])?['gr_deviceid']})",
+          "headers": { "Content-Type": "application/json", "OData-MaxVersion": "4.0", "OData-Version": "4.0", "If-Match": "*" },
+          "body": {
+            "gr_firmware": "v@{triggerBody()?['FirmwareVersion']}"
+          },
+          "authentication": { "type": "ActiveDirectoryOAuth", "tenant": "@parameters('tenantId')", "audience": "@parameters('dataverseUrl')", "clientId": "@parameters('clientId')", "secret": "@parameters('clientSecret')" }
+        },
+        "runAfter": { "Create_Reading": ["Succeeded"] },
+        "runtimeConfiguration": { "staticResult": { "name": "Update_Device_Firmware0", "staticResultOptions": "Disabled" } }
+      },
       "Response": {
         "type": "Response",
         "kind": "Http",
@@ -82,7 +97,7 @@
           "headers": { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
           "body": { "status": "ok", "timestamp": "@utcNow()" }
         },
-        "runAfter": { "Create_Reading": ["Succeeded"] }
+        "runAfter": { "Update_Device_Firmware": ["Succeeded", "Failed", "Skipped"] }
       }
     },
     "outputs": {}
