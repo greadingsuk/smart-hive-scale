@@ -37,9 +37,9 @@ constexpr DeviceConfig DEVICES[DEVICE_COUNT] = {
     // MAC: D4:E9:F4:8B:94:C0
     { {0xD4, 0xE9, 0xF4, 0x8B, 0x94, 0xC0}, "Hive1", "IoT Hive Stand 1", {192, 168, 1, 75} },
 
-    // Device 2 — Repaired ESP32 WEMOS ESP-32S (Hive 2)
-    // MAC: D4:E9:F4:8A:6D:C4
-    { {0xD4, 0xE9, 0xF4, 0x8A, 0x6D, 0xC4}, "Hive2", "IoT Hive Stand 2", {192, 168, 1, 76} },
+    // Device 2 — Replacement ESP32 WEMOS (Hive 2)
+    // MAC: D4:E9:F4:BD:81:10
+    { {0xD4, 0xE9, 0xF4, 0xBD, 0x81, 0x10}, "Hive2", "IoT Hive Stand 2", {192, 168, 1, 76} },
 };
 
 // ─── Lookup Function ───────────────────────────────────────

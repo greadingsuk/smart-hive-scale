@@ -20,6 +20,8 @@ import { fetchTelemetry, getAllActivity, getActiveHives, refreshDataStore } from
 import { fetchStationWeather, fetchSwitchBot, SWITCHBOT_DEVICES } from '../api/weather.js';
 
 const TIME_RANGES = [
+  { key: '6h',   label: '6h',       hours: 6,     bucketMs: 0,         xUnit: 'hour',  tooltipFmt: 'dd MMM HH:mm' },
+  { key: '12h',  label: '12h',      hours: 12,    bucketMs: 0,         xUnit: 'hour',  tooltipFmt: 'dd MMM HH:mm' },
   { key: '24h',  label: '24h',      hours: 24,    bucketMs: 0,         xUnit: 'hour',  tooltipFmt: 'dd MMM HH:mm' },
   { key: '7d',   label: '7d',       hours: 168,   bucketMs: 3600000,   xUnit: 'hour',  tooltipFmt: 'dd MMM HH:mm' },
   { key: '14d',  label: '14d',      hours: 336,   bucketMs: 7200000,   xUnit: 'day',   tooltipFmt: 'dd MMM HH:mm' },
