@@ -136,8 +136,8 @@ export async function fetchTelemetry(hiveId = null, hours = 24) {
     timestamp: r.timestamp ?? r.gr_readingtimestamp ?? r.createdon
   }))
   .filter(r => {
-    // Exclude DS18B20 disconnected readings (-127°C)
-    if (r.internalTemp <= -100) r.internalTemp = null;
+    // Exclude DS18B20 disconnected readings (-127°C) and power-on reset (85.0°C)
+    if (r.internalTemp <= -100 || r.internalTemp === 85) r.internalTemp = null;
     // Exclude completely empty payloads (no sensors connected)
     if (r.weight === 0 && (r.internalTemp === 0 || r.internalTemp === null) && r.batteryVoltage === 0) return false;
     return true;
