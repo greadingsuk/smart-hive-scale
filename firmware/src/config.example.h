@@ -17,4 +17,11 @@
 
 #define INGEST_URL "YOUR_POWER_AUTOMATE_HTTP_TRIGGER_URL_HERE"
 
+// ----- OTA Firmware Update (optional) -----
+// Uncomment and set these to enable pull-based OTA updates.
+// Version file should contain a single integer (e.g. "2")
+// Binary file is the compiled .bin from PlatformIO build output.
+// #define OTA_VERSION_URL "https://raw.githubusercontent.com/YOUR_USER/YOUR_REPO/master/firmware/version.txt"
+// #define OTA_BINARY_URL  "https://github.com/YOUR_USER/YOUR_REPO/releases/latest/download/firmware.bin"
+
 #endif // CONFIG_H

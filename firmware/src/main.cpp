@@ -4,6 +4,8 @@
 // Sensor flow: Read HX711 → connect Wi-Fi → POST → deep sleep
 // Battery strategy: read sensors BEFORE Wi-Fi (radios off)
 // Multi-device: MAC-based auto-config from devices.h
+// OTA: Pull-based — checks version URL, self-flashes if newer
+// Offline: LittleFS caching with RTC time tracking
 // ============================================================
 
 #include <Arduino.h>
@@ -22,8 +24,13 @@
 #include <Adafruit_SSD1306.h>
 #include <Preferences.h>
 #include <nvs_flash.h>
+#include <LittleFS.h>
+#include <Update.h>
 #include "config.h"
 #include "devices.h"
+
+// ----- Firmware Version (for OTA) -----
+constexpr int FIRMWARE_VERSION = 1;
 
 // ----- Active Device (resolved from MAC at boot) -----
 const DeviceConfig* activeDevice = nullptr;
@@ -83,6 +90,12 @@ RTC_DATA_ATTR int bootCount = 0;
 RTC_DATA_ATTR uint8_t savedBSSID[6] = {0};   // Router MAC address
 RTC_DATA_ATTR int32_t savedChannel  = 0;     // Wi-Fi channel (1-13)
 RTC_DATA_ATTR bool    hasCachedAP   = false;  // True after first successful connect
+RTC_DATA_ATTR time_t  lastKnownUTC  = 0;     // Last successful NTP/server time
+RTC_DATA_ATTR int32_t missedCycles  = 0;     // Consecutive offline wake cycles
+
+// ----- LittleFS Offline Cache -----
+constexpr const char* CACHE_FILE = "/readings.jsonl";
+constexpr int SLEEP_MINUTES = 15;
 
 /// Kill Bluetooth radio immediately — saves ~50mA.
 void killBluetooth() {
@@ -281,6 +294,190 @@ int sendToCloud(const String& payload) {
 
     http.end();
     return httpCode;
+}
+
+// ============================================================
+// LittleFS Offline Cache
+// ============================================================
+
+/// Initialise LittleFS. Call once in setup().
+bool initLittleFS() {
+    if (!LittleFS.begin(true)) {  // true = format on first use
+        Serial.println("LittleFS mount FAILED");
+        return false;
+    }
+    Serial.println("LittleFS ready");
+    return true;
+}
+
+/// Build a JSON payload with an estimated timestamp for offline caching.
+String buildTimestampedPayload(float weight, float tempC, float batteryV) {
+    JsonDocument doc;
+    doc["Weight"]         = weight;
+    doc["InternalTemp"]   = (tempC != DEVICE_DISCONNECTED_C) ? tempC : 0.0;
+    doc["BatteryVoltage"] = batteryV;
+    doc["HiveHum"]        = 0;
+    doc["LegTemp"]        = 0.0;
+    doc["HiveId"]         = activeDevice->hiveId;
+    doc["DeviceMAC"]      = deviceMAC;
+    doc["DeviceName"]     = activeDevice->deviceName;
+
+    // Estimate timestamp from last known UTC + missed cycles
+    if (lastKnownUTC > 0) {
+        time_t estimated = lastKnownUTC + ((missedCycles + 1) * SLEEP_MINUTES * 60);
+        char isoTime[25];
+        struct tm* t = gmtime(&estimated);
+        strftime(isoTime, sizeof(isoTime), "%Y-%m-%dT%H:%M:%SZ", t);
+        doc["Timestamp"] = isoTime;
+    }
+
+    String json;
+    serializeJson(doc, json);
+    return json;
+}
+
+/// Save a reading to LittleFS when Wi-Fi is unavailable.
+void saveReadingToFlash(float weight, float tempC, float batteryV) {
+    File f = LittleFS.open(CACHE_FILE, FILE_APPEND);
+    if (!f) {
+        Serial.println("CACHE: Failed to open file for append");
+        return;
+    }
+    String line = buildTimestampedPayload(weight, tempC, batteryV);
+    f.println(line);
+    f.close();
+    missedCycles++;
+    Serial.printf("CACHE: Saved to flash (%d cached)\n", missedCycles);
+}
+
+/// Upload all cached readings from LittleFS, then delete the cache file.
+/// Returns the number of successfully uploaded readings.
+int uploadCachedReadings() {
+    if (!LittleFS.exists(CACHE_FILE)) return 0;
+
+    File f = LittleFS.open(CACHE_FILE, FILE_READ);
+    if (!f) return 0;
+
+    int total = 0, success = 0;
+    while (f.available()) {
+        String line = f.readStringUntil('\n');
+        line.trim();
+        if (line.length() == 0) continue;
+        total++;
+
+        int status = sendToCloud(line);
+        if (status >= 200 && status < 300) {
+            success++;
+        } else {
+            Serial.printf("CACHE: Failed to upload reading %d (HTTP %d)\n", total, status);
+        }
+        delay(500);  // Brief pause between POSTs to avoid throttling
+    }
+    f.close();
+
+    if (success == total) {
+        LittleFS.remove(CACHE_FILE);
+        Serial.printf("CACHE: All %d readings uploaded, file deleted\n", success);
+    } else {
+        Serial.printf("CACHE: %d/%d uploaded — keeping file for retry\n", success, total);
+    }
+
+    missedCycles = 0;
+    return success;
+}
+
+/// Get the count of cached readings (for display/serial reporting).
+int getCachedCount() {
+    if (!LittleFS.exists(CACHE_FILE)) return 0;
+    File f = LittleFS.open(CACHE_FILE, FILE_READ);
+    if (!f) return 0;
+    int count = 0;
+    while (f.available()) {
+        String line = f.readStringUntil('\n');
+        line.trim();
+        if (line.length() > 0) count++;
+    }
+    f.close();
+    return count;
+}
+
+// ============================================================
+// OTA Firmware Update (Pull-based)
+// ============================================================
+
+/// Check for a newer firmware version and self-update if available.
+/// Call only when Wi-Fi is connected.
+void checkOTA() {
+#ifdef OTA_VERSION_URL
+    Serial.printf("OTA: Checking for updates (current v%d)...\n", FIRMWARE_VERSION);
+
+    WiFiClientSecure client;
+    client.setInsecure();
+    HTTPClient http;
+
+    // Step 1: Fetch remote version number
+    http.begin(client, OTA_VERSION_URL);
+    http.setTimeout(10000);
+    int code = http.GET();
+    if (code != 200) {
+        Serial.printf("OTA: Version check failed (HTTP %d)\n", code);
+        http.end();
+        return;
+    }
+    String verStr = http.getString();
+    verStr.trim();
+    int remoteVersion = verStr.toInt();
+    http.end();
+
+    if (remoteVersion <= FIRMWARE_VERSION) {
+        Serial.printf("OTA: Up to date (remote v%d)\n", remoteVersion);
+        return;
+    }
+
+    Serial.printf("OTA: New version v%d available! Downloading...\n", remoteVersion);
+
+    // Step 2: Download and flash the binary
+    http.begin(client, OTA_BINARY_URL);
+    http.setTimeout(60000);
+    code = http.GET();
+    if (code != 200) {
+        Serial.printf("OTA: Binary download failed (HTTP %d)\n", code);
+        http.end();
+        return;
+    }
+
+    int contentLength = http.getSize();
+    if (contentLength <= 0) {
+        Serial.println("OTA: Invalid content length");
+        http.end();
+        return;
+    }
+
+    if (!Update.begin(contentLength)) {
+        Serial.printf("OTA: Not enough space (%d bytes needed)\n", contentLength);
+        http.end();
+        return;
+    }
+
+    WiFiClient* stream = http.getStreamPtr();
+    size_t written = Update.writeStream(*stream);
+    http.end();
+
+    if (written != (size_t)contentLength) {
+        Serial.printf("OTA: Write mismatch (%d/%d)\n", written, contentLength);
+        Update.abort();
+        return;
+    }
+
+    if (!Update.end()) {
+        Serial.printf("OTA: Finalize failed: %s\n", Update.errorString());
+        return;
+    }
+
+    Serial.printf("OTA: Success! v%d → v%d. Rebooting...\n", FIRMWARE_VERSION, remoteVersion);
+    delay(500);
+    ESP.restart();
+#endif
 }
 
 /// Kill all radios and enter deep sleep.
@@ -781,23 +978,46 @@ void setup() {
     }
 
     // ─── Normal timer wake: read sensors and transmit ───
+    initLittleFS();
+
     float weight   = readWeight();
     float tempC    = readTemperature();
     float batteryV = readBatteryVoltage();
 
     // Step 2: Connect to Wi-Fi (fast path if cached)
     if (connectWiFi()) {
-        // Step 3: Build and send payload
+        // Step 2a: Upload any cached offline readings first
+        int cached = getCachedCount();
+        if (cached > 0) {
+            Serial.printf("CACHE: %d offline readings to upload\n", cached);
+            uploadCachedReadings();
+        }
+
+        // Step 2b: Send current reading
         String payload = buildPayload(weight, tempC, batteryV);
         int status = sendToCloud(payload);
 
         if (status >= 200 && status < 300) {
             Serial.println("OK — Data reached Dataverse.");
+            // Update last known time from successful POST
+            // (HTTP Date header or just use compile-time + boot count as approximation)
+            lastKnownUTC = time(nullptr);
+            if (lastKnownUTC < 1000000000) {
+                // time() not synced — estimate from previous known time
+                if (lastKnownUTC == 0) lastKnownUTC = 1743552000; // ~2025-04-02 fallback epoch
+                lastKnownUTC += SLEEP_MINUTES * 60;
+            }
+            missedCycles = 0;
         } else {
             Serial.println("WARN — Non-success response.");
         }
+
+        // Step 2c: Check for OTA firmware update
+        checkOTA();
     } else {
-        Serial.println("WARN — No Wi-Fi. Will cache to flash later.");
+        // Wi-Fi failed — cache reading to flash
+        Serial.println("WARN — No Wi-Fi. Caching to flash.");
+        saveReadingToFlash(weight, tempC, batteryV);
     }
 
     // Step 3: Report total awake time, then sleep
