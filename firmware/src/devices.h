@@ -4,11 +4,19 @@
 // Each ESP32 has a unique MAC address burned into silicon.
 // At boot, the firmware reads its MAC and looks up its config here.
 //
+// HIVE ASSIGNMENT: The hiveId here is a FALLBACK only.
+// The Logic App resolves the actual hive from the gr_device
+// table in Dataverse (Assigned Hive dropdown in the web app).
+// To move a scale to a different hive, change the dropdown —
+// no firmware reflash needed.
+//
 // To add a new device:
 //   1. Flash the firmware — it will print its MAC to serial and halt
 //   2. Copy the MAC into a new entry below
-//   3. Assign a unique HIVE_ID, static IP, and friendly name
+//   3. Assign a static IP and friendly name
 //   4. Reflash — it will self-configure on next boot
+//   5. Register the device in the web app (Device Health page)
+//   6. Set the Assigned Hive in the web app dropdown
 // ============================================================
 
 #ifndef DEVICES_H
@@ -18,7 +26,7 @@
 
 struct DeviceConfig {
     const uint8_t mac[6];       // Wi-Fi station MAC (printed at boot)
-    const char*   hiveId;       // Matches Dataverse Hive ID (e.g. "Hive1")
+    const char*   hiveId;       // Fallback hive ID (overridden by Dataverse assignment)
     const char*   deviceName;   // Friendly label for serial output
     const uint8_t ip[4];        // Static IP address on local network
 };

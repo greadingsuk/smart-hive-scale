@@ -31,6 +31,27 @@
       }
     },
     "actions": {
+      "Lookup_Device_By_MAC": {
+        "type": "Http",
+        "inputs": {
+          "method": "GET",
+          "uri": "@{parameters('dataverseUrl')}/api/data/v9.2/gr_devices?$filter=gr_macaddress eq '@{triggerBody()?['DeviceMAC']}'&$select=gr_assignedhive&$top=1",
+          "headers": { "Accept": "application/json", "OData-MaxVersion": "4.0", "OData-Version": "4.0" },
+          "authentication": { "type": "ActiveDirectoryOAuth", "tenant": "@parameters('tenantId')", "audience": "@parameters('dataverseUrl')", "clientId": "@parameters('clientId')", "secret": "@parameters('clientSecret')" }
+        },
+        "runAfter": {}
+      },
+      "Resolve_HiveId": {
+        "type": "InitializeVariable",
+        "inputs": {
+          "variables": [{
+            "name": "resolvedHiveId",
+            "type": "string",
+            "value": "@{if(and(greater(length(body('Lookup_Device_By_MAC')?['value']), 0), not(empty(first(body('Lookup_Device_By_MAC')?['value'])?['gr_assignedhive']))), first(body('Lookup_Device_By_MAC')?['value'])?['gr_assignedhive'], triggerBody()?['HiveId'])}"
+          }]
+        },
+        "runAfter": { "Lookup_Device_By_MAC": ["Succeeded", "Failed"] }
+      },
       "Create_Reading": {
         "type": "Http",
         "inputs": {
@@ -44,14 +65,14 @@
             "gr_batteryvoltage": "@triggerBody()?['BatteryVoltage']",
             "gr_hivehum": "@triggerBody()?['HiveHum']",
             "gr_legtemp": "@triggerBody()?['LegTemp']",
-            "gr_hiveid": "@triggerBody()?['HiveId']",
+            "gr_hiveid": "@variables('resolvedHiveId')",
             "gr_devicemac": "@triggerBody()?['DeviceMAC']",
             "gr_devicename": "@triggerBody()?['DeviceName']",
             "gr_readingtimestamp": "@utcNow()"
           },
           "authentication": { "type": "ActiveDirectoryOAuth", "tenant": "@parameters('tenantId')", "audience": "@parameters('dataverseUrl')", "clientId": "@parameters('clientId')", "secret": "@parameters('clientSecret')" }
         },
-        "runAfter": {}
+        "runAfter": { "Resolve_HiveId": ["Succeeded"] }
       },
       "Response": {
         "type": "Response",
