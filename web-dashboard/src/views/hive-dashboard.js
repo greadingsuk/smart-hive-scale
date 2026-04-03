@@ -3,7 +3,7 @@
  */
 import { renderHeader, strengthBar, formatDate, activityBadge } from '../components/ui.js';
 import { renderHiveStack } from '../components/hive-visual.js';
-import { getHives, getHiveActivity, getCustomActivity, getHiveNote, setHiveNote, getAllActivity, splitHive, combineHives, deadOutHive, moveHive, convertHive, fetchTelemetry } from '../api/dataverse.js';
+import { getHives, getHiveActivity, getCustomActivity, getHiveNote, setHiveNote, getAllActivity, splitHive, combineHives, deadOutHive, moveHive, convertHive, sellHive, fetchTelemetry } from '../api/dataverse.js';
 import { fetchSwitchBot, SWITCHBOT_DEVICES } from '../api/weather.js';
 
 export async function renderHiveDashboard(app, params) {
@@ -254,7 +254,10 @@ export async function renderHiveDashboard(app, params) {
           <button data-op="move" class="card-surface text-center py-3">
             <div class="section-subtitle">Move</div>
           </button>
-          <button data-op="convert" class="card-surface text-center py-3 col-span-2 sm:col-span-4">
+          <button data-op="sell" class="card-surface text-center py-3 col-span-1 sm:col-span-2">
+            <div class="section-subtitle">Sell</div>
+          </button>
+          <button data-op="convert" class="card-surface text-center py-3 col-span-1 sm:col-span-2">
             <div class="section-subtitle">${hive.type === 'Hive' ? 'Downsize to Nuc' : 'Upgrade to Hive'}</div>
           </button>
         </div>
@@ -262,14 +265,23 @@ export async function renderHiveDashboard(app, params) {
 
       <!-- Inspection Timeline -->
       <section class="px-4 mb-6">
-        <h3 class="font-serif text-base font-medium text-hive-text mb-3">Inspection History</h3>
+        <h3 class="font-serif text-base font-medium text-hive-text mb-3">Hive Timeline</h3>
         <div class="space-y-0">
           ${activity.map((a, i) => {
+            const isInspection = a.type === 'Inspection';
+            const isBuild = a.type === 'Build Change';
+            const dotColor = isBuild ? 'rgba(59,130,246,0.1)' : 'rgba(212,175,55,0.1)';
+            const iconColor = isBuild ? 'var(--hive-blue)' : 'var(--hive-gold)';
+            const icon = isBuild
+              ? '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11.42 15.17l-5.66-5.66a2 2 0 010-2.83l.71-.71a2 2 0 012.83 0l5.66 5.66m-8.49 8.49l-2.83-2.83a2 2 0 010-2.83l.71-.71a2 2 0 012.83 0l2.83 2.83"/></svg>'
+              : '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>';
+            const tag = isInspection ? 'a' : 'div';
+            const href = isInspection ? ` href="#/inspection/${a.id || i}?from=${encodeURIComponent(hiveName)}"` : '';
             return `
-            <a href="#/inspection/${a.id || i}?from=${encodeURIComponent(hiveName)}" class="flex gap-3 ${i < activity.length - 1 ? 'pb-4' : ''} block">
+            <${tag}${href} class="flex gap-3 ${i < activity.length - 1 ? 'pb-4' : ''} block">
               <div class="flex flex-col items-center">
-                <div class="timeline-dot" style="background: rgba(212,175,55,0.1); color: var(--hive-gold)">
-                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+                <div class="timeline-dot" style="background: ${dotColor}; color: ${iconColor}">
+                  ${icon}
                 </div>
                 ${i < activity.length - 1 ? '<div class="w-px bg-hive-border flex-1 mt-1"></div>' : ''}
               </div>
@@ -285,7 +297,7 @@ export async function renderHiveDashboard(app, params) {
                   ${a.strength ? `<span>${a.strength}%</span>` : ''}
                 </div>
               </div>
-            </a>`;
+            </${tag}>`;
           }).join('')}
           ${activity.length === 0 ? '<p class="text-hive-muted text-sm text-center py-6">No activity recorded yet.</p>' : ''}
         </div>
@@ -477,5 +489,15 @@ export async function renderHiveDashboard(app, params) {
     const notes = prompt('Conversion notes (optional):') || '';
     const updated = convertHive(hive.id, notes);
     if (updated) window.location.hash = '#/hive/' + encodeURIComponent(updated.hiveName);
+  });
+
+  app.querySelector('[data-op="sell"]')?.addEventListener('click', () => {
+    if (!confirm(`Sell "${hive.hiveName}"? This will deactivate the hive.`)) return;
+    const buyer = prompt('Buyer name (optional):') || '';
+    const priceStr = prompt('Sale price (£):');
+    const price = priceStr ? parseFloat(priceStr) : null;
+    const notes = prompt('Sale notes (optional):') || '';
+    sellHive(hive.id, buyer, notes, price);
+    window.location.hash = '#/apiary';
   });
 }

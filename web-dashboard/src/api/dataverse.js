@@ -32,6 +32,7 @@ export async function initDataStore() {
     _notes = notes.map(mapNoteFromDv);
     _tasks = tasks.map(mapTaskFromDv);
     _devices = devices.map(mapDeviceFromDv);
+    reconcileInspections();
     _dataLoaded = true;
   } catch (err) {
     console.error('Failed to load from Dataverse:', err);
@@ -52,6 +53,7 @@ export async function refreshDataStore() {
     _notes = notes.map(mapNoteFromDv);
     _tasks = tasks.map(mapTaskFromDv);
     _devices = devices.map(mapDeviceFromDv);
+    reconcileInspections();
   } catch (err) {
     console.error('Failed to refresh from Dataverse:', err);
   }
@@ -145,6 +147,32 @@ export async function fetchTelemetry(hiveId = null, hours = 24) {
   .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
 }
 
+/**
+ * Reconcile inspections with current hive names.
+ * If a hive was renamed, old inspections point to the old name.
+ * This matches orphaned inspections back to hives by extracting the
+ * hive number + name suffix (e.g. "Hive 1 – Obsidian" → 1 + "obsidian"
+ * matches "H1 - Obsidian" → 1 + "obsidian").
+ */
+function reconcileInspections() {
+  const hiveNames = new Set(_hives.map(h => h.hiveName));
+  const extractParts = s => {
+    const num = s.match(/\d+/)?.[0] || '';
+    const name = s.split(/[-–—]/)[1]?.trim().toLowerCase() || '';
+    return { num, name };
+  };
+  for (const insp of _inspections) {
+    if (hiveNames.has(insp.hive)) continue;
+    const inspParts = extractParts(insp.hive);
+    if (!inspParts.name && !inspParts.num) continue;
+    const match = _hives.find(h => {
+      const hp = extractParts(h.hiveName);
+      return hp.num === inspParts.num && hp.name === inspParts.name;
+    });
+    if (match) insp.hive = match.hiveName;
+  }
+}
+
 export const APIARY = { name: 'Home Apiary', location: 'Kidmore End, Reading RG4 9AY, UK', lat: 51.509, lng: -0.975 };
 
 // Inspections / Activity
@@ -220,15 +248,20 @@ export function deleteHive(id) { _hives = _hives.filter(h => h.id !== id); write
 // Component operations
 export function addComponent(hiveId, componentType, position) {
   const hive = _hives.find(h => h.id === hiveId); if (!hive) return;
+  const def = COMPONENT_TYPES.find(c => c.id === componentType);
   if (!hive.components) hive.components = [];
   const insertAt = position != null ? position : Math.max(0, hive.components.length - 1);
   hive.components.splice(insertAt, 0, { type: componentType });
   writeAsync('hives', 'update', mapHiveToDv(hive), hiveId);
+  addActivityRecord({ type: 'Build Change', hive: hive.hiveName, notes: `Added ${def?.name || componentType}`, strength: hive.strength, queenSeen: false, broodSpotted: false });
 }
 export function removeComponent(hiveId, index) {
   const hive = _hives.find(h => h.id === hiveId); if (!hive || !hive.components) return;
+  const removed = hive.components[index];
+  const def = removed ? COMPONENT_TYPES.find(c => c.id === removed.type) : null;
   hive.components.splice(index, 1);
   writeAsync('hives', 'update', mapHiveToDv(hive), hiveId);
+  addActivityRecord({ type: 'Build Change', hive: hive.hiveName, notes: `Removed ${def?.name || removed?.type || 'component'}`, strength: hive.strength, queenSeen: false, broodSpotted: false });
 }
 export function moveComponent(hiveId, fromIndex, toIndex) {
   const hive = _hives.find(h => h.id === hiveId); if (!hive || !hive.components) return;
@@ -267,9 +300,10 @@ export function moveHive(hiveId, newLocation, notes, leavingApiary = false) {
   addActivityRecord({ type: 'Moved', hive: hive.hiveName, notes: `Moved to ${newLocation}. ${notes || ''}`.trim(), strength: hive.strength, queenSeen: false, broodSpotted: false });
   if (leavingApiary) updateHive(hiveId, { status: 'Moved' });
 }
-export function sellHive(hiveId, buyer, notes) {
+export function sellHive(hiveId, buyer, notes, price) {
   const hive = getHiveById(hiveId); if (!hive) return;
-  addActivityRecord({ type: 'Sold', hive: hive.hiveName, notes: `Sold to ${buyer || 'unknown buyer'}. ${notes || ''}`.trim(), strength: hive.strength, queenSeen: false, broodSpotted: false });
+  const priceNote = price != null ? ` Price: £${price.toFixed(2)}.` : '';
+  addActivityRecord({ type: 'Sold', hive: hive.hiveName, notes: `Sold to ${buyer || 'unknown buyer'}.${priceNote} ${notes || ''}`.trim(), strength: hive.strength, queenSeen: false, broodSpotted: false });
   updateHive(hiveId, { status: 'Sold' });
 }
 const COMPONENT_MAP_TO_NUC = { 'hive-roof': 'nuc-roof', 'hive-floor': 'nuc-floor', 'hive-stand': 'nuc-stand', 'super': 'nuc-super', 'national-brood': 'nuc-brood', '14x12-brood': 'nuc-brood', 'hive-eke': 'nuc-eke' };
