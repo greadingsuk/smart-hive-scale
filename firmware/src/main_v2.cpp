@@ -31,7 +31,7 @@
 #include "devices.h"
 
 // ----- Firmware Version (for OTA) -----
-#define FIRMWARE_VERSION "2.0.0"
+#define FIRMWARE_VERSION "2.0.1"
 
 // ----- Active Device (resolved from MAC at boot) -----
 const DeviceConfig* activeDevice = nullptr;
@@ -975,8 +975,8 @@ void setup() {
             Serial.println("WARN — Non-success response.");
         }
 
-        // OTA disabled until golden build validated fleet-wide
-        // checkOTA();
+        // OTA: Check for firmware updates after successful POST
+        checkOTA();
     } else {
         Serial.println("WARN — No Wi-Fi. Caching to flash.");
         saveReadingToFlash(weight, hiveTemp, enclosureTemp, batteryV);
