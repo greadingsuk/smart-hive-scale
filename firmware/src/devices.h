@@ -10,6 +10,9 @@
 // To move a scale to a different hive, change the dropdown —
 // no firmware reflash needed.
 //
+// FLEET MIGRATION: All scales standardised to DFRobot FireBeetle 2
+// ESP32-E (DFR0654) as of v2.0.0. Old Wemos boards are retired.
+//
 // To add a new device:
 //   1. Flash the firmware — it will print its MAC to serial and halt
 //   2. Copy the MAC into a new entry below
@@ -29,6 +32,7 @@ struct DeviceConfig {
     const char*   hiveId;       // Fallback hive ID (overridden by Dataverse assignment)
     const char*   deviceName;   // Friendly label for serial output
     const uint8_t ip[4];        // Static IP address on local network
+    const char*   boardType;    // Hardware generation for fleet tracking
 };
 
 // ─── Device Registry ───────────────────────────────────────
@@ -38,16 +42,12 @@ struct DeviceConfig {
 //
 // IMPORTANT: Update DEVICE_COUNT when adding/removing entries.
 
-constexpr int DEVICE_COUNT = 2;
+constexpr int DEVICE_COUNT = 1;
 
 constexpr DeviceConfig DEVICES[DEVICE_COUNT] = {
-    // Device 1 — Original ESP32 (Hive 1)
-    // MAC: D4:E9:F4:8B:94:C0
-    { {0xD4, 0xE9, 0xF4, 0x8B, 0x94, 0xC0}, "Hive1", "IoT Hive Stand 1", {192, 168, 1, 75} },
-
-    // Device 2 — Replacement ESP32 WEMOS (Hive 2)
-    // MAC: D4:E9:F4:BD:81:10
-    { {0xD4, 0xE9, 0xF4, 0xBD, 0x81, 0x10}, "Hive2", "IoT Hive Stand 2", {192, 168, 1, 76} },
+    // Scale 1 — FireBeetle 2 ESP32-E (commissioned 2026-04-11)
+    // MAC: 14:33:5C:58:C4:8C
+    { {0x14, 0x33, 0x5C, 0x58, 0xC4, 0x8C}, "Hive1", "IoT Hive Stand 1", {192, 168, 1, 75}, "FireBeetle2" },
 };
 
 // ─── Lookup Function ───────────────────────────────────────

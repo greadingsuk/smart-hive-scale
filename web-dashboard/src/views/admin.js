@@ -136,7 +136,7 @@ export function renderAdmin(app) {
             <span class="text-sm text-hive-muted">Dashboard</span>
             <span class="text-xs text-hive-muted">v2.0.0</span>
           </div>
-          <button onclick="sessionStorage.removeItem('hive_user'); window.location.hash='#/login'" class="w-full btn-secondary text-hive-red border-hive-red/30 hover:border-hive-red mt-2">
+          <button onclick="sessionStorage.removeItem('hive_user'); localStorage.removeItem('hive_remember'); localStorage.removeItem('hive_user'); window.location.hash='#/login'" class="w-full btn-secondary text-hive-red border-hive-red/30 hover:border-hive-red mt-2">
             Sign Out
           </button>
         </div>

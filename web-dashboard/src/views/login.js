@@ -19,6 +19,15 @@ async function hashCredentials(username, password) {
 }
 
 export async function renderLogin(app) {
+  // Auto-login if Remember Me was previously used
+  const remembered = localStorage.getItem('hive_remember');
+  const rememberedUser = localStorage.getItem('hive_user');
+  if (remembered && rememberedUser && VALID_CREDENTIAL_HASHES.includes(remembered)) {
+    sessionStorage.setItem('hive_user', rememberedUser);
+    window.location.hash = '#/apiary-select';
+    return;
+  }
+
   const bgImg = UNSPLASH_IMAGES.loginBackground;
   const imgUrls = bgImg.urls || [bgImg.url];
   app.innerHTML = `
@@ -49,6 +58,10 @@ export async function renderLogin(app) {
               <input type="password" id="password" class="login-input" placeholder="Enter your password" autocomplete="current-password" required>
             </div>
           </div>
+          <div class="flex items-center gap-2 mt-1">
+            <input type="checkbox" id="rememberMe" class="w-4 h-4 rounded border-white/20 bg-white/5 text-hive-amber focus:ring-hive-amber/50 cursor-pointer">
+            <label for="rememberMe" class="text-sm text-gray-400 cursor-pointer select-none">Remember me</label>
+          </div>
           <div id="loginError" class="text-hive-red text-sm hidden"></div>
           <button type="submit" class="btn-primary w-full py-3 mt-2">Sign In</button>
         </form>
@@ -64,7 +77,12 @@ export async function renderLogin(app) {
 
     const hash = await hashCredentials(username, password);
     if (VALID_CREDENTIAL_HASHES.includes(hash)) {
-      sessionStorage.setItem('hive_user', JSON.stringify({ name: username.charAt(0).toUpperCase() + username.slice(1), role: 'admin' }));
+      const userData = JSON.stringify({ name: username.charAt(0).toUpperCase() + username.slice(1), role: 'admin' });
+      sessionStorage.setItem('hive_user', userData);
+      if (document.getElementById('rememberMe').checked) {
+        localStorage.setItem('hive_remember', hash);
+        localStorage.setItem('hive_user', userData);
+      }
       window.location.hash = '#/apiary-select';
     } else {
       const errEl = document.getElementById('loginError');

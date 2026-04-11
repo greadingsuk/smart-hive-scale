@@ -23,7 +23,7 @@ export async function renderDevices(app) {
 
   function deviceStatus(mac) {
     const latest = telemetryByMAC[mac.toUpperCase()];
-    if (!latest || !latest.timestamp) return { status: 'No Data', lastSeen: null, battery: null, weight: null, temp: null };
+    if (!latest || !latest.timestamp) return { status: 'No Data', lastSeen: null, battery: null, weight: null, temp: null, boxTemp: null };
     const age = Date.now() - new Date(latest.timestamp).getTime();
     const mins = Math.floor(age / 60000);
     const status = mins <= 20 ? 'Online' : mins <= 120 ? 'Delayed' : 'Offline';
@@ -33,6 +33,7 @@ export async function renderDevices(app) {
       battery: latest.batteryVoltage,
       weight: latest.weight,
       temp: latest.internalTemp,
+      boxTemp: latest.legTemp,
     };
   }
 
@@ -87,7 +88,7 @@ export async function renderDevices(app) {
             </div>
 
             <!-- Metrics Grid -->
-            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs mb-4">
+            <div class="grid grid-cols-2 sm:grid-cols-5 gap-2 text-xs mb-4">
               <div class="bg-hive-bg rounded-lg p-2.5">
                 <div class="text-hive-muted mb-0.5">Last Seen</div>
                 <div class="font-semibold text-hive-text">${d.lastSeen ? formatDate(d.lastSeen) : '—'}</div>
@@ -103,6 +104,10 @@ export async function renderDevices(app) {
               <div class="bg-hive-bg rounded-lg p-2.5">
                 <div class="text-hive-muted mb-0.5">IP Address</div>
                 <div class="font-semibold text-hive-text font-mono text-[11px]">${d.ip || '—'}</div>
+              </div>
+              <div class="bg-hive-bg rounded-lg p-2.5">
+                <div class="text-hive-muted mb-0.5">Box Temp</div>
+                <div class="font-semibold text-hive-text">${d.boxTemp != null && d.boxTemp > 0 ? d.boxTemp.toFixed(1) + '°C' : '—'}</div>
               </div>
             </div>
 

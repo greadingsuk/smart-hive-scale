@@ -19,7 +19,15 @@ export function initRouter(defaultHash = '#/login') {
     const hash = window.location.hash || defaultHash;
 
     // Check auth — redirect to login if not authenticated
-    const user = sessionStorage.getItem('hive_user');
+    let user = sessionStorage.getItem('hive_user');
+    // Restore session from Remember Me if available
+    if (!user) {
+      const remembered = localStorage.getItem('hive_user');
+      if (remembered) {
+        sessionStorage.setItem('hive_user', remembered);
+        user = remembered;
+      }
+    }
     if (!user && hash !== '#/login') {
       window.location.hash = '#/login';
       return;
