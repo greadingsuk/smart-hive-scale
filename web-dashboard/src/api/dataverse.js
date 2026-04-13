@@ -86,10 +86,10 @@ function writeAsync(entity, operation, data, id) {
 function safeJSON(str, fb) { if (!str) return fb; try { return JSON.parse(str); } catch { return fb; } }
 
 function mapHiveFromDv(r) {
-  return { id: r.gr_hiveid, hiveName: r.gr_name, type: r.gr_hivetype || 'Hive', hiveStyle: r.gr_hivestyle || '', status: r.gr_status || 'Active', strength: r.gr_strength ?? 0, beeType: r.gr_beetype || '', color: r.gr_color || '#f59e0b', queenMarked: !!r.gr_queenmarked, queenColor: r.gr_queencolor || null, queenYear: r.gr_queenyear || null, queenClipped: !!r.gr_queenclipped, queenSource: r.gr_queensource || '', queenAddedDate: r.gr_queenaddeddate ? r.gr_queenaddeddate.slice(0, 10) : null, queenNotes: r.gr_queennotes || '', queenImage: r.gr_queenimage || null, dateAdded: r.gr_dateadded ? r.gr_dateadded.slice(0, 10) : new Date().toISOString().slice(0, 10), orientation: r.gr_orientation || 'vertical', components: safeJSON(r.gr_components, []) };
+  return { id: r.gr_hiveid, hiveName: r.gr_name, type: r.gr_hivetype || 'Hive', hiveStyle: r.gr_hivestyle || '', status: r.gr_status || 'Active', strength: r.gr_strength ?? 0, beeType: r.gr_beetype || '', color: r.gr_color || '#f59e0b', queenMarked: !!r.gr_queenmarked, queenColor: r.gr_queencolor || null, queenYear: r.gr_queenyear || null, queenClipped: !!r.gr_queenclipped, queenSource: r.gr_queensource || '', queenAddedDate: r.gr_queenaddeddate ? r.gr_queenaddeddate.slice(0, 10) : null, queenNotes: r.gr_queennotes || '', queenImage: r.gr_queenimage || null, dateAdded: r.gr_dateadded ? r.gr_dateadded.slice(0, 10) : new Date().toISOString().slice(0, 10), orientation: r.gr_orientation || 'vertical', components: safeJSON(r.gr_components, []), sortOrder: r.gr_sort_order ?? 999 };
 }
 function mapHiveToDv(h) {
-  return { gr_name: h.hiveName, gr_hivetype: h.type, gr_hivestyle: h.hiveStyle, gr_status: h.status, gr_strength: h.strength, gr_beetype: h.beeType, gr_color: h.color, gr_queenmarked: h.queenMarked, gr_queencolor: h.queenColor, gr_queenyear: h.queenYear, gr_queenclipped: h.queenClipped, gr_queensource: h.queenSource, gr_queenaddeddate: h.queenAddedDate, gr_queennotes: h.queenNotes, gr_queenimage: h.queenImage || '', gr_components: JSON.stringify(h.components || []), gr_dateadded: h.dateAdded, gr_orientation: h.orientation };
+  return { gr_name: h.hiveName, gr_hivetype: h.type, gr_hivestyle: h.hiveStyle, gr_status: h.status, gr_strength: h.strength, gr_beetype: h.beeType, gr_color: h.color, gr_queenmarked: h.queenMarked, gr_queencolor: h.queenColor, gr_queenyear: h.queenYear, gr_queenclipped: h.queenClipped, gr_queensource: h.queenSource, gr_queenaddeddate: h.queenAddedDate, gr_queennotes: h.queenNotes, gr_queenimage: h.queenImage || '', gr_components: JSON.stringify(h.components || []), gr_dateadded: h.dateAdded, gr_orientation: h.orientation, gr_sort_order: h.sortOrder ?? 999 };
 }
 function mapInspectionFromDv(r) {
   return { id: r.gr_inspectionid || r.gr_name, date: r.gr_activitydate ? r.gr_activitydate.slice(0, 10) : '', type: r.gr_activitytype || 'Inspection', hive: r.gr_hivename || '', strength: r.gr_strength, queenSeen: !!r.gr_queenseen, broodSpotted: !!r.gr_broodspotted, queenCells: !!r.gr_queencells, temperament: r.gr_temperament || '', broodPattern: r.gr_broodpattern || '', weightLeft: r.gr_weightleft, weightRight: r.gr_weightright, weightTotal: r.gr_weighttotal, diseases: safeJSON(r.gr_diseases, []), pests: safeJSON(r.gr_pests, []), notes: r.gr_notes || '', weatherTemp: r.gr_weathertemp, weatherConditions: r.gr_weatherconditions || '', _dvId: r.gr_inspectionid };
@@ -224,9 +224,13 @@ export const QUEEN_COLORS = ['Blue', 'White', 'Yellow', 'Red', 'Green', 'Pink'];
 
 // Hive CRUD
 export const ARCHIVE_STATUSES = ['Dead', 'Combined', 'Moved', 'Sold'];
-export function getHives() { return _hives; }
-export function getArchivedHives() { return _hives.filter(h => ARCHIVE_STATUSES.includes(h.status)); }
-export function getActiveHives() { return _hives.filter(h => !ARCHIVE_STATUSES.includes(h.status)); }
+export function getHives() {
+  return [..._hives].sort((a, b) => (a.sortOrder ?? 999) - (b.sortOrder ?? 999));
+}
+export function getArchivedHives() { return getHives().filter(h => ARCHIVE_STATUSES.includes(h.status)); }
+export function getActiveHives() {
+  return getHives().filter(h => !ARCHIVE_STATUSES.includes(h.status));
+}
 export function getHiveById(id) { return _hives.find(h => h.id === id); }
 export function addHive(hive) {
   hive.id = hive.id || 'hive-' + Date.now();
@@ -385,4 +389,19 @@ export function updateDevice(id, updates) {
 export function removeDevice(id) {
   _devices = _devices.filter(d => d.id !== id);
   writeAsync('devices', 'delete', null, id);
+}
+
+// Hive sort order — persisted to Dataverse (gr_sort_order)
+export function reorderHive(hiveId, direction) {
+  const active = getActiveHives();
+  const idx = active.findIndex(h => h.id === hiveId);
+  if (idx === -1) return;
+  const newIdx = direction === 'up' ? idx - 1 : idx + 1;
+  if (newIdx < 0 || newIdx >= active.length) return;
+  const movingHive = active[idx];
+  const swapHive = active[newIdx];
+  const movingOrder = movingHive.sortOrder ?? idx;
+  const swapOrder = swapHive.sortOrder ?? newIdx;
+  updateHive(movingHive.id, { sortOrder: swapOrder });
+  updateHive(swapHive.id, { sortOrder: movingOrder });
 }

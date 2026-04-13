@@ -3,7 +3,7 @@
  */
 import { renderHeader } from '../components/ui.js';
 import { renderHiveThumb } from '../components/hive-visual.js';
-import { APIARY, getHives, getArchivedHives } from '../api/dataverse.js';
+import { APIARY, getHives, getArchivedHives, reorderHive } from '../api/dataverse.js';
 
 export function renderAdmin(app) {
   const hives = getHives();
@@ -62,9 +62,17 @@ export function renderAdmin(app) {
           </a>
         </div>
         <div class="space-y-2">
-          ${hives.filter(h => h.status === 'Active').map(h => `
+          ${hives.filter(h => h.status === 'Active').map((h, i, arr) => `
             <div class="card-surface flex items-center justify-between">
               <div class="flex items-center gap-3">
+                <div class="flex flex-col gap-0.5 mr-1">
+                  <button data-reorder="up" data-hive="${h.id}" class="p-0.5 text-hive-muted hover:text-hive-gold transition-colors ${i === 0 ? 'opacity-20 pointer-events-none' : ''}" title="Move up">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 15l7-7 7 7"/></svg>
+                  </button>
+                  <button data-reorder="down" data-hive="${h.id}" class="p-0.5 text-hive-muted hover:text-hive-gold transition-colors ${i === arr.length - 1 ? 'opacity-20 pointer-events-none' : ''}" title="Move down">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                  </button>
+                </div>
                 <div class="w-12 h-14 rounded-lg overflow-hidden flex items-center justify-center" style="background: linear-gradient(135deg, ${h.color}15, ${h.color}05)">
                   ${renderHiveThumb(h.components, h.color)}
                 </div>
@@ -144,4 +152,15 @@ export function renderAdmin(app) {
 
     </main>
   `;
+
+  // Wire up reorder buttons
+  app.querySelectorAll('[data-reorder]').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      const hiveId = btn.dataset.hive;
+      const direction = btn.dataset.reorder;
+      reorderHive(hiveId, direction);
+      renderAdmin(app);
+    });
+  });
 }
