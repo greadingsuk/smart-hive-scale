@@ -195,6 +195,47 @@ export async function renderHiveDashboard(app, params) {
         </div>
       </div>
 
+      <!-- Split Modal -->
+      <div id="splitModal" class="fixed inset-0 z-[100] hidden">
+        <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" id="splitModalBackdrop"></div>
+        <div class="absolute inset-x-4 top-1/2 -translate-y-1/2 max-w-lg mx-auto">
+          <div class="rounded-2xl overflow-hidden" style="background:var(--hive-surface);border:1px solid var(--hive-border);box-shadow:0 25px 50px rgba(0,0,0,0.4)">
+            <div class="p-5" style="border-bottom:1px solid var(--hive-border)">
+              <div class="flex items-center justify-between">
+                <h3 class="font-serif text-lg font-medium text-hive-text">Split ${hive.hiveName}</h3>
+                <button id="splitModalClose" class="p-1 text-hive-muted hover:text-hive-text">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+              </div>
+              <p class="text-xs text-hive-muted mt-1">Create a new nuc from this hive</p>
+            </div>
+            <div class="p-5 space-y-4">
+              <div>
+                <label class="block text-xs text-hive-muted mb-1">New Nuc Name <span class="text-hive-red">*</span></label>
+                <input type="text" id="splitNucName" class="input-field" placeholder='e.g. Nuc 2 - Split' required>
+              </div>
+              <div>
+                <label class="block text-xs text-hive-muted mb-1">Notes (optional)</label>
+                <textarea id="splitNotes" class="input-field" rows="2" placeholder="Reason for split, frames moved, etc."></textarea>
+              </div>
+              <div class="flex items-center justify-between rounded-xl p-3" style="background:var(--hive-bg)">
+                <div>
+                  <div class="text-sm font-medium text-hive-text">Move queen to new nuc?</div>
+                  <div class="text-[10px] text-hive-muted">Queen data will transfer to the nuc</div>
+                </div>
+                <button type="button" id="splitMoveQueenToggle" class="relative w-11 h-6 rounded-full transition-colors" style="background:var(--hive-border)">
+                  <span class="absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform"></span>
+                </button>
+              </div>
+            </div>
+            <div class="px-5 pb-5 flex justify-end gap-2">
+              <button id="splitModalCancel" class="btn-secondary text-xs py-2 px-5">Cancel</button>
+              <button id="splitModalConfirm" class="btn-primary text-xs py-2 px-5">Split Hive</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- IoT Sensor Data -->
       <section class="px-4 mb-4">
         <div class="card p-5">
@@ -443,18 +484,37 @@ export async function renderHiveDashboard(app, params) {
     }
   })();
 
-  // Wire up hive operation buttons
-  app.querySelector('[data-op="split"]')?.addEventListener('click', () => {
-    if (!confirm(`Split "${hive.hiveName}"? This will create a new nuc from this hive.`)) return;
-    const name = prompt('Name for the new nuc/hive (e.g. "Nuc 2 - Split"):');
-    if (!name) return;
-    const notes = prompt('Split notes (optional):') || '';
+  // Wire up split modal
+  const splitModal = document.getElementById('splitModal');
+  const openSplitModal = () => splitModal?.classList.remove('hidden');
+  const closeSplitModal = () => splitModal?.classList.add('hidden');
+  let splitMoveQueen = false;
+
+  document.getElementById('splitModalBackdrop')?.addEventListener('click', closeSplitModal);
+  document.getElementById('splitModalClose')?.addEventListener('click', closeSplitModal);
+  document.getElementById('splitModalCancel')?.addEventListener('click', closeSplitModal);
+
+  document.getElementById('splitMoveQueenToggle')?.addEventListener('click', (e) => {
+    splitMoveQueen = !splitMoveQueen;
+    const btn = e.currentTarget;
+    btn.style.background = splitMoveQueen ? 'var(--hive-gold)' : 'var(--hive-border)';
+    btn.querySelector('span').style.transform = splitMoveQueen ? 'translateX(1.25rem)' : 'translateX(0)';
+  });
+
+  document.getElementById('splitModalConfirm')?.addEventListener('click', () => {
+    const name = document.getElementById('splitNucName')?.value.trim();
+    if (!name) { document.getElementById('splitNucName')?.focus(); return; }
+    const notes = document.getElementById('splitNotes')?.value.trim() || '';
     const newNuc = splitHive(hive.id, name, notes);
-    if (newNuc && confirm('Move the queen to the new nuc?')) {
+    if (newNuc && splitMoveQueen) {
       moveQueen(hive.id, newNuc.id, `Queen moved during split to ${name}`);
     }
+    closeSplitModal();
     window.location.hash = '#/apiary';
   });
+
+  // Wire up hive operation buttons
+  app.querySelector('[data-op="split"]')?.addEventListener('click', openSplitModal);
 
   app.querySelector('[data-op="combine"]')?.addEventListener('click', () => {
     const otherHives = getHives().filter(h => h.id !== hive.id && h.status === 'Active');

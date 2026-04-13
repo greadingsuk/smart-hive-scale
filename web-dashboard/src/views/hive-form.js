@@ -154,6 +154,38 @@ export function renderHiveForm(app, params) {
           </div>` : ''}
         </section>
 
+        <!-- Move Queen Modal -->
+        ${isEdit ? `
+        <div id="moveQueenModal" class="fixed inset-0 z-[100] hidden">
+          <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" id="mqModalBackdrop"></div>
+          <div class="absolute inset-x-4 top-1/2 -translate-y-1/2 max-w-lg mx-auto">
+            <div class="rounded-2xl overflow-hidden" style="background:var(--hive-surface);border:1px solid var(--hive-border);box-shadow:0 25px 50px rgba(0,0,0,0.4)">
+              <div class="p-5" style="border-bottom:1px solid var(--hive-border)">
+                <div class="flex items-center justify-between">
+                  <h3 class="font-serif text-lg font-medium text-hive-text">Move Queen</h3>
+                  <button id="mqModalClose" class="p-1 text-hive-muted hover:text-hive-text">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                  </button>
+                </div>
+                <p class="text-xs text-hive-muted mt-1">Transfer queen from ${hive.hiveName} to another hive</p>
+              </div>
+              <div class="p-5 space-y-4">
+                <div>
+                  <label class="block text-xs text-hive-muted mb-1">Destination Hive <span class="text-hive-red">*</span></label>
+                  <select id="mqDestination" class="input-field">
+                    <option value="">Select a hive…</option>
+                    ${getActiveHives().filter(h => h.id !== hiveId).map(h => `<option value="${h.id}">${h.hiveName}</option>`).join('')}
+                  </select>
+                </div>
+              </div>
+              <div class="px-5 pb-5 flex justify-end gap-2">
+                <button id="mqModalCancel" class="btn-secondary text-xs py-2 px-5">Cancel</button>
+                <button id="mqModalConfirm" class="btn-primary text-xs py-2 px-5">Move Queen</button>
+              </div>
+            </div>
+          </div>
+        </div>` : ''}
+
         <!-- Strength & Hive Colour -->
         <section class="card p-5">
           <label class="block section-subtitle mb-2">Hive Strength</label>
@@ -264,19 +296,24 @@ export function renderHiveForm(app, params) {
     }
   });
 
-  // Move Queen
+  // Move Queen modal
   if (isEdit) {
-    document.getElementById('moveQueenBtn')?.addEventListener('click', () => {
-      const others = getActiveHives().filter(h => h.id !== hiveId);
-      if (!others.length) { alert('No other active hives to move the queen to.'); return; }
-      const list = others.map((h, i) => `${i + 1}. ${h.hiveName}`).join('\n');
-      const choice = prompt(`Move queen from ${hive.hiveName} to which hive?\n\n${list}\n\nEnter number:`);
-      if (!choice) return;
-      const idx = parseInt(choice, 10) - 1;
-      if (idx < 0 || idx >= others.length) { alert('Invalid selection.'); return; }
-      if (!confirm(`Move queen from "${hive.hiveName}" to "${others[idx].hiveName}"?`)) return;
-      moveQueen(hiveId, others[idx].id);
-      window.location.hash = '#/hive/' + encodeURIComponent(others[idx].hiveName);
+    const mqModal = document.getElementById('moveQueenModal');
+    const openMQ = () => mqModal?.classList.remove('hidden');
+    const closeMQ = () => mqModal?.classList.add('hidden');
+
+    document.getElementById('moveQueenBtn')?.addEventListener('click', openMQ);
+    document.getElementById('mqModalBackdrop')?.addEventListener('click', closeMQ);
+    document.getElementById('mqModalClose')?.addEventListener('click', closeMQ);
+    document.getElementById('mqModalCancel')?.addEventListener('click', closeMQ);
+
+    document.getElementById('mqModalConfirm')?.addEventListener('click', () => {
+      const destId = document.getElementById('mqDestination')?.value;
+      if (!destId) { document.getElementById('mqDestination')?.focus(); return; }
+      const dest = getActiveHives().find(h => h.id === destId);
+      moveQueen(hiveId, destId);
+      closeMQ();
+      window.location.hash = '#/hive/' + encodeURIComponent(dest?.hiveName || '');
     });
   }
 
