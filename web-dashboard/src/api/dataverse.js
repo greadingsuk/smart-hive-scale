@@ -306,6 +306,14 @@ export function sellHive(hiveId, buyer, notes, price) {
   addActivityRecord({ type: 'Sold', hive: hive.hiveName, notes: `Sold to ${buyer || 'unknown buyer'}.${priceNote} ${notes || ''}`.trim(), strength: hive.strength, queenSeen: false, broodSpotted: false });
   updateHive(hiveId, { status: 'Sold' });
 }
+export function moveQueen(fromHiveId, toHiveId, notes) {
+  const from = getHiveById(fromHiveId); const to = getHiveById(toHiveId); if (!from || !to) return;
+  const queenFields = { queenMarked: from.queenMarked, queenColor: from.queenColor, queenYear: from.queenYear, queenAddedDate: from.queenAddedDate, queenClipped: from.queenClipped, queenSource: from.queenSource, queenNotes: from.queenNotes, queenImage: from.queenImage };
+  updateHive(toHiveId, queenFields);
+  updateHive(fromHiveId, { queenMarked: false, queenColor: null, queenYear: null, queenAddedDate: null, queenClipped: false, queenSource: '', queenNotes: '', queenImage: null });
+  addActivityRecord({ type: 'Queen Moved', hive: from.hiveName, notes: `Queen moved to ${to.hiveName}. ${notes || ''}`.trim(), strength: from.strength, queenSeen: false, broodSpotted: false });
+  addActivityRecord({ type: 'Queen Moved', hive: to.hiveName, notes: `Queen received from ${from.hiveName}. ${notes || ''}`.trim(), strength: to.strength, queenSeen: true, broodSpotted: false });
+}
 const COMPONENT_MAP_TO_NUC = { 'hive-roof': 'nuc-roof', 'hive-floor': 'nuc-floor', 'hive-stand': 'nuc-stand', 'super': 'nuc-super', 'national-brood': 'nuc-brood', '14x12-brood': 'nuc-brood', 'hive-eke': 'nuc-eke' };
 const COMPONENT_MAP_TO_HIVE = { 'nuc-roof': 'hive-roof', 'nuc-floor': 'hive-floor', 'nuc-stand': 'hive-stand', 'nuc-brood': 'national-brood', 'nuc-super': 'super', 'nuc-eke': 'hive-eke' };
 export function convertHive(hiveId, notes) {

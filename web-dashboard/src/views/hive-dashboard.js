@@ -3,7 +3,7 @@
  */
 import { renderHeader, strengthBar, formatDate, activityBadge } from '../components/ui.js';
 import { renderHiveStack } from '../components/hive-visual.js';
-import { getHives, getHiveActivity, getCustomActivity, getHiveNote, setHiveNote, getAllActivity, splitHive, combineHives, deadOutHive, moveHive, convertHive, sellHive, fetchTelemetry } from '../api/dataverse.js';
+import { getHives, getHiveActivity, getCustomActivity, getHiveNote, setHiveNote, getAllActivity, splitHive, combineHives, deadOutHive, moveHive, convertHive, sellHive, moveQueen, getActiveHives, fetchTelemetry } from '../api/dataverse.js';
 import { fetchSwitchBot, SWITCHBOT_DEVICES } from '../api/weather.js';
 
 export async function renderHiveDashboard(app, params) {
@@ -449,7 +449,10 @@ export async function renderHiveDashboard(app, params) {
     const name = prompt('Name for the new nuc/hive (e.g. "Nuc 2 - Split"):');
     if (!name) return;
     const notes = prompt('Split notes (optional):') || '';
-    splitHive(hive.id, name, notes);
+    const newNuc = splitHive(hive.id, name, notes);
+    if (newNuc && confirm('Move the queen to the new nuc?')) {
+      moveQueen(hive.id, newNuc.id, `Queen moved during split to ${name}`);
+    }
     window.location.hash = '#/apiary';
   });
 

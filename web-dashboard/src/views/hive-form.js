@@ -4,7 +4,7 @@
 import { renderHeader } from '../components/ui.js';
 import { renderHiveStack } from '../components/hive-visual.js';
 import { openCropModal } from '../components/image-crop.js';
-import { getHiveById, addHive, updateHive, deleteHive, BREED_OPTIONS, HIVE_TYPES, COMPONENT_TYPES, QUEEN_SOURCES, QUEEN_COLORS } from '../api/dataverse.js';
+import { getHiveById, addHive, updateHive, deleteHive, moveQueen, getActiveHives, BREED_OPTIONS, HIVE_TYPES, COMPONENT_TYPES, QUEEN_SOURCES, QUEEN_COLORS } from '../api/dataverse.js';
 
 export function renderHiveForm(app, params) {
   const hiveId = params.id;
@@ -145,6 +145,13 @@ export function renderHiveForm(app, params) {
             <label class="block text-xs text-hive-muted mb-1">Queen Notes</label>
             <textarea id="queenNotes" class="input-field" rows="2" placeholder="e.g. Gentle temperament, prolific layer">${hive.queenNotes || ''}</textarea>
           </div>
+          ${isEdit ? `
+          <div class="mt-4 pt-4" style="border-top:1px solid var(--hive-border)">
+            <button type="button" id="moveQueenBtn" class="flex items-center gap-2 text-sm text-hive-gold hover:opacity-80 transition-opacity">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M7.5 21L3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5"/></svg>
+              Move Queen to Another Hive
+            </button>
+          </div>` : ''}
         </section>
 
         <!-- Strength & Hive Colour -->
@@ -256,6 +263,22 @@ export function renderHiveForm(app, params) {
       window.location.hash = '#/build/' + newHive.id;
     }
   });
+
+  // Move Queen
+  if (isEdit) {
+    document.getElementById('moveQueenBtn')?.addEventListener('click', () => {
+      const others = getActiveHives().filter(h => h.id !== hiveId);
+      if (!others.length) { alert('No other active hives to move the queen to.'); return; }
+      const list = others.map((h, i) => `${i + 1}. ${h.hiveName}`).join('\n');
+      const choice = prompt(`Move queen from ${hive.hiveName} to which hive?\n\n${list}\n\nEnter number:`);
+      if (!choice) return;
+      const idx = parseInt(choice, 10) - 1;
+      if (idx < 0 || idx >= others.length) { alert('Invalid selection.'); return; }
+      if (!confirm(`Move queen from "${hive.hiveName}" to "${others[idx].hiveName}"?`)) return;
+      moveQueen(hiveId, others[idx].id);
+      window.location.hash = '#/hive/' + encodeURIComponent(others[idx].hiveName);
+    });
+  }
 
   // Delete
   if (isEdit) {
