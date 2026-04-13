@@ -55,11 +55,9 @@ constexpr int DS18B20_PIN = 13;  // D7
 OneWire oneWire(DS18B20_PIN);
 DallasTemperature tempSensors(&oneWire);
 
-// DS18B20 ROM addresses (enumerated during component test)
-// Enclosure = bare TO-92 chip inside IP65 box
-// Hive = waterproof probe inserted into beehive
-DeviceAddress SENSOR_ENCLOSURE = {0x28, 0x80, 0xFE, 0x24, 0x00, 0x00, 0x00, 0x8E};
-DeviceAddress SENSOR_HIVE      = {0x28, 0x93, 0x3E, 0x80, 0x00, 0x00, 0x00, 0x09};
+// DS18B20 ROM addresses — loaded from activeDevice at boot
+DeviceAddress sensorHive;
+DeviceAddress sensorEnclosure;
 
 HX711 scale;
 
@@ -221,8 +219,8 @@ void readTemperatures(float& hiveTemp, float& enclosureTemp) {
     tempSensors.setWaitForConversion(true);
     tempSensors.requestTemperatures();
 
-    hiveTemp = tempSensors.getTempC(SENSOR_HIVE);
-    enclosureTemp = tempSensors.getTempC(SENSOR_ENCLOSURE);
+    hiveTemp = tempSensors.getTempC(sensorHive);
+    enclosureTemp = tempSensors.getTempC(sensorEnclosure);
 
     // Filter 85.0°C (power-on reset) and -127°C (disconnected)
     if (hiveTemp == 85.0 || hiveTemp == DEVICE_DISCONNECTED_C) {
@@ -916,6 +914,10 @@ void setup() {
                   activeDevice->deviceName, activeDevice->hiveId,
                   activeDevice->ip[0], activeDevice->ip[1],
                   activeDevice->ip[2], activeDevice->ip[3]);
+
+    // Load per-device DS18B20 ROM addresses
+    memcpy(sensorHive, activeDevice->sensorHive, 8);
+    memcpy(sensorEnclosure, activeDevice->sensorEnclosure, 8);
 
     // Check if woken by button press
     esp_sleep_wakeup_cause_t wakeReason = esp_sleep_get_wakeup_cause();

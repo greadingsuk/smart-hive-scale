@@ -28,26 +28,37 @@
 #include <stdint.h>
 
 struct DeviceConfig {
-    const uint8_t mac[6];       // Wi-Fi station MAC (printed at boot)
-    const char*   hiveId;       // Fallback hive ID (overridden by Dataverse assignment)
-    const char*   deviceName;   // Friendly label for serial output
-    const uint8_t ip[4];        // Static IP address on local network
-    const char*   boardType;    // Hardware generation for fleet tracking
+    const uint8_t mac[6];           // Wi-Fi station MAC (printed at boot)
+    const char*   hiveId;           // Fallback hive ID (overridden by Dataverse assignment)
+    const char*   deviceName;       // Friendly label for serial output
+    const uint8_t ip[4];            // Static IP address on local network
+    const char*   boardType;        // Hardware generation for fleet tracking
+    const uint8_t sensorHive[8];    // DS18B20 ROM address — waterproof hive probe
+    const uint8_t sensorEnclosure[8]; // DS18B20 ROM address — bare TO-92 in enclosure
 };
 
 // ─── Device Registry ───────────────────────────────────────
 // Add one entry per physical ESP32.
 // MAC address: read from serial output on first boot.
+// DS18B20 addresses: read from fb-test-ds18b20 enumeration test.
 // Static IPs must be reserved on your router (DHCP reservation).
 //
 // IMPORTANT: Update DEVICE_COUNT when adding/removing entries.
 
-constexpr int DEVICE_COUNT = 1;
+constexpr int DEVICE_COUNT = 2;
 
 constexpr DeviceConfig DEVICES[DEVICE_COUNT] = {
     // Scale 1 — FireBeetle 2 ESP32-E (commissioned 2026-04-11)
     // MAC: 14:33:5C:58:C4:8C
-    { {0x14, 0x33, 0x5C, 0x58, 0xC4, 0x8C}, "Hive1", "IoT Hive Stand 1", {192, 168, 1, 75}, "FireBeetle2" },
+    { {0x14, 0x33, 0x5C, 0x58, 0xC4, 0x8C}, "Hive1", "IoT Hive Stand 1", {192, 168, 1, 75}, "FireBeetle2",
+      {0x28, 0x93, 0x3E, 0x80, 0x00, 0x00, 0x00, 0x09},   // Hive probe
+      {0x28, 0x80, 0xFE, 0x24, 0x00, 0x00, 0x00, 0x8E} },  // Enclosure TO-92
+
+    // Scale 2 — FireBeetle 2 ESP32-E (commissioned 2026-04-13)
+    // MAC: 14:33:5C:3E:22:68
+    { {0x14, 0x33, 0x5C, 0x3E, 0x22, 0x68}, "Hive2", "IoT Hive Stand 2", {192, 168, 1, 76}, "FireBeetle2",
+      {0x28, 0xA6, 0xFA, 0xC8, 0x00, 0x00, 0x00, 0xCE},   // Hive probe
+      {0x28, 0x35, 0x6F, 0x80, 0x00, 0x00, 0x00, 0xBF} },  // Enclosure TO-92
 };
 
 // ─── Lookup Function ───────────────────────────────────────
