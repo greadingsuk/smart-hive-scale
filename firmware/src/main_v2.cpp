@@ -47,7 +47,7 @@ constexpr unsigned long FULL_SCAN_TIMEOUT_MS    = 12000;
 // ----- HX711 Load Cell (FireBeetle pinout) -----
 constexpr int HX711_DT_PIN  = 25;  // D2
 constexpr int HX711_SCK_PIN = 26;  // D3
-constexpr float DEFAULT_CALIBRATION_FACTOR = -22050.0;
+constexpr float DEFAULT_CALIBRATION_FACTOR = -26913.0;
 constexpr int HX711_SAMPLES = 10;
 
 // ----- DS18B20 Temperature Sensors (dual, shared 1-Wire bus) -----
