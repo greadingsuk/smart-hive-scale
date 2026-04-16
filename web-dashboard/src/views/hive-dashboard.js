@@ -408,12 +408,15 @@ export async function renderHiveDashboard(app, params) {
   (async () => {
     try {
       const allData = await fetchTelemetry(null, 168); // 7 days
-      // Filter to this hive — match by hiveName or hive.id patterns
+      // Filter to this hive — match by hiveName, hive.id, or hive number
+      // ESP32 sends HiveId like "Hive1" — extract number and match against hive name (e.g. "H1 - Obsidian")
+      const hiveNum = hiveName.match(/\d+/)?.[0];
       const hiveData = allData.filter(r => {
         const rid = r.hiveId || '';
-        return rid === hiveName || rid === hive.id
-          || hiveName.toLowerCase().includes(rid.toLowerCase())
-          || rid.toLowerCase().includes(hiveName.replace(/[^a-z0-9]/gi, '').toLowerCase());
+        if (rid === hiveName || rid === hive.id) return true;
+        // Match "Hive1" against "H1 - Obsidian" by comparing the number
+        if (hiveNum && rid === `Hive${hiveNum}`) return true;
+        return false;
       });
 
       if (hiveData.length > 0) {

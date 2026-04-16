@@ -81,15 +81,19 @@ export async function renderApiaryDashboard(app) {
   const hiveColorMap = {};
   hives.forEach((h, i) => { hiveColorMap[h.hiveName] = h.color || FALLBACK_COLORS[i % FALLBACK_COLORS.length]; });
   // Map HiveId (e.g. "Hive1") to hiveName (e.g. "H1 - Obsidian")
-  // For now, use hiveId directly if no match
+  // ESP32 sends HiveId like "Hive1", "Hive2" — extract number from hive name to match
   const hiveIdToName = {};
   const hiveIdToColor = {};
   hives.forEach((h, i) => {
-    // The ESP32 sends HiveId like "Hive1", "Hive2" — try to match
-    const possibleIds = [h.hiveName, h.id, `Hive${i+1}`];
+    const color = h.color || FALLBACK_COLORS[i % FALLBACK_COLORS.length];
+    // Extract the hive number from the name (e.g. "H1 - Obsidian" → 1, "N2 - BMH" → 2)
+    const numMatch = h.hiveName.match(/\d+/);
+    const possibleIds = [h.hiveName, h.id];
+    if (numMatch) possibleIds.push(`Hive${numMatch[0]}`);
+    possibleIds.push(`Hive${i+1}`);  // fallback: array index
     for (const pid of possibleIds) {
       hiveIdToName[pid] = h.hiveName;
-      hiveIdToColor[pid] = h.color || FALLBACK_COLORS[i % FALLBACK_COLORS.length];
+      hiveIdToColor[pid] = color;
     }
   });
 
