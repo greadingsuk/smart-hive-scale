@@ -512,9 +512,11 @@ export async function renderHiveDashboard(app, params) {
     if (newNuc && splitMoveQueen) {
       moveQueen(hive.id, newNuc.id, `Queen moved during split to ${name}`);
     }
-    // Auto-create follow-up task: check for laying queen in 28 days
-    const due = new Date(); due.setDate(due.getDate() + 28);
-    addTask(`Check for laying queen \u2014 ${name}`, due.toISOString().slice(0, 10));
+    // Auto-create follow-up tasks after split
+    const due7 = new Date(); due7.setDate(due7.getDate() + 7);
+    addTask(`Knock down surplus queen cells \u2014 ${name}`, due7.toISOString().slice(0, 10));
+    const due21 = new Date(); due21.setDate(due21.getDate() + 21);
+    addTask(`Check for laying queen \u2014 ${name}`, due21.toISOString().slice(0, 10));
     closeSplitModal();
     window.location.hash = '#/apiary';
   });

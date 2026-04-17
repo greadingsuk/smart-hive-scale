@@ -155,11 +155,9 @@ export async function renderInspectionForm(app) {
             <span id="nextInspLabel" class="text-xs text-hive-gold"></span>
           </div>
           <div class="flex flex-wrap gap-2 mb-3">
-            <button type="button" data-days="7" class="next-insp-btn btn-secondary text-xs py-1.5 px-3">+7d Swarm Check</button>
-            <button type="button" data-days="9" class="next-insp-btn btn-secondary text-xs py-1.5 px-3">+9d Cell Knockdown</button>
+            <button type="button" data-days="7" class="next-insp-btn btn-secondary text-xs py-1.5 px-3">+7d Weekly</button>
             <button type="button" data-days="14" class="next-insp-btn btn-secondary text-xs py-1.5 px-3">+14d Routine</button>
-            <button type="button" data-days="21" class="next-insp-btn btn-secondary text-xs py-1.5 px-3">+21d Queen Check</button>
-            <button type="button" data-days="28" class="next-insp-btn btn-secondary text-xs py-1.5 px-3">+28d Laying Verify</button>
+            <button type="button" data-days="21" class="next-insp-btn btn-secondary text-xs py-1.5 px-3">+21d Queen Laying</button>
           </div>
           <div>
             <label class="text-[11px] text-hive-muted block mb-1">Or pick a date</label>
