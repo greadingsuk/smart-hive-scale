@@ -3,7 +3,7 @@
  */
 import { renderHeader, strengthBar, strengthBadge, hexRing, formatDate, activityBadge, ICON } from '../components/ui.js';
 import { renderHiveThumb } from '../components/hive-visual.js';
-import { APIARY, getHives, getArchivedHives, getActivityTimeline, getApiaryNotes, getApiaryTasks, toggleTask } from '../api/dataverse.js';
+import { APIARY, getHives, getArchivedHives, getActivityTimeline, getApiaryNotes, getApiaryTasks, toggleTask, getAllActivity } from '../api/dataverse.js';
 import { fetchCurrentWeather, fetchStationWeather, fetchSwitchBot, SWITCHBOT_DEVICES } from '../api/weather.js';
 
 export async function renderApiary(app) {
@@ -166,6 +166,31 @@ export async function renderApiary(app) {
         </section>
       </div>
 
+      <!-- Calendar -->
+      <section class="px-5 mb-6" id="calendarSection">
+        <div class="flex items-center justify-between mb-3">
+          <h2 class="section-title">Calendar</h2>
+          <div class="flex items-center gap-2">
+            <button id="calPrev" class="p-1 text-hive-muted hover:text-hive-gold"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg></button>
+            <span id="calMonth" class="text-sm font-medium text-hive-text min-w-[120px] text-center"></span>
+            <button id="calNext" class="p-1 text-hive-muted hover:text-hive-gold"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg></button>
+          </div>
+        </div>
+        <div class="card p-4">
+          <div class="grid grid-cols-7 gap-0 text-center text-[10px] text-hive-muted uppercase tracking-wider mb-2">
+            <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
+          </div>
+          <div id="calGrid" class="grid grid-cols-7 gap-0"></div>
+        </div>
+        <div id="calDetail" class="hidden mt-3 card p-4">
+          <div class="flex items-center justify-between mb-2">
+            <span id="calDetailDate" class="text-sm font-medium text-hive-text"></span>
+            <button id="calDetailClose" class="text-hive-muted hover:text-hive-text p-1"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg></button>
+          </div>
+          <div id="calDetailItems" class="space-y-2 text-xs"></div>
+        </div>
+      </section>
+
       <!-- Recent Activity -->
       <section class="px-5 mb-6">
         <div class="flex items-center justify-between mb-3">
@@ -241,4 +266,86 @@ export async function renderApiary(app) {
       }
     });
   });
+
+  // Calendar widget
+  const allTasks = getApiaryTasks(true);
+  const allInspections = getAllActivity();
+  let calYear = new Date().getFullYear();
+  let calMonth = new Date().getMonth();
+
+  function renderCalendar() {
+    const grid = document.getElementById('calGrid');
+    const monthLabel = document.getElementById('calMonth');
+    if (!grid || !monthLabel) return;
+
+    monthLabel.textContent = new Date(calYear, calMonth).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
+    const firstDay = new Date(calYear, calMonth, 1);
+    const lastDay = new Date(calYear, calMonth + 1, 0);
+    const startDow = (firstDay.getDay() + 6) % 7; // Mon=0
+    const today = new Date(); today.setHours(0,0,0,0);
+
+    // Build event map for this month
+    const monthKey = `${calYear}-${String(calMonth+1).padStart(2,'0')}`;
+    const eventMap = {};
+    allTasks.filter(t => !t.deleted && t.due?.startsWith(monthKey)).forEach(t => {
+      const d = t.due.slice(8, 10).replace(/^0/, '');
+      if (!eventMap[d]) eventMap[d] = { tasks: [], inspections: [] };
+      eventMap[d].tasks.push(t);
+    });
+    allInspections.filter(a => a.date?.startsWith(monthKey)).forEach(a => {
+      const d = a.date.slice(8, 10).replace(/^0/, '');
+      if (!eventMap[d]) eventMap[d] = { tasks: [], inspections: [] };
+      eventMap[d].inspections.push(a);
+    });
+
+    let html = '';
+    // Blank cells before first day
+    for (let i = 0; i < startDow; i++) html += '<div class="p-1"></div>';
+
+    for (let d = 1; d <= lastDay.getDate(); d++) {
+      const dateObj = new Date(calYear, calMonth, d);
+      const isToday = dateObj.getTime() === today.getTime();
+      const ev = eventMap[String(d)];
+      const hasTasks = ev?.tasks.length > 0;
+      const hasInsp = ev?.inspections.length > 0;
+      const dateStr = `${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+
+      html += `<button type="button" data-cal-date="${dateStr}" class="cal-day relative flex flex-col items-center py-1.5 rounded-lg transition-colors ${isToday ? 'ring-1 ring-hive-gold' : ''} ${hasTasks || hasInsp ? 'hover:bg-[var(--hive-bg)] cursor-pointer' : 'cursor-default'}">
+        <span class="text-xs ${isToday ? 'font-bold text-hive-gold' : 'text-hive-text'}">${d}</span>
+        <div class="flex gap-0.5 mt-0.5 h-1.5">
+          ${hasTasks ? '<span class="w-1.5 h-1.5 rounded-full bg-hive-gold"></span>' : ''}
+          ${hasInsp ? '<span class="w-1.5 h-1.5 rounded-full bg-hive-amber"></span>' : ''}
+        </div>
+      </button>`;
+    }
+    grid.innerHTML = html;
+
+    // Wire day clicks
+    grid.querySelectorAll('.cal-day').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const dateStr = btn.dataset.calDate;
+        const d = String(parseInt(dateStr.slice(8), 10));
+        const ev = eventMap[d];
+        if (!ev || (!ev.tasks.length && !ev.inspections.length)) return;
+        const detail = document.getElementById('calDetail');
+        const detailDate = document.getElementById('calDetailDate');
+        const detailItems = document.getElementById('calDetailItems');
+        detailDate.textContent = new Date(dateStr).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'long' });
+        let items = '';
+        ev.tasks.forEach(t => {
+          items += `<div class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-hive-gold flex-shrink-0"></span><span class="${t.done ? 'line-through text-hive-muted' : 'text-hive-text'}">${t.text}</span></div>`;
+        });
+        ev.inspections.forEach(a => {
+          items += `<div class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-hive-amber flex-shrink-0"></span><span class="text-hive-text">${a.type}: ${a.hive}${a.notes ? ' \u2014 ' + a.notes.slice(0, 60) : ''}</span></div>`;
+        });
+        detailItems.innerHTML = items;
+        detail.classList.remove('hidden');
+      });
+    });
+  }
+
+  renderCalendar();
+  document.getElementById('calPrev')?.addEventListener('click', () => { calMonth--; if (calMonth < 0) { calMonth = 11; calYear--; } renderCalendar(); });
+  document.getElementById('calNext')?.addEventListener('click', () => { calMonth++; if (calMonth > 11) { calMonth = 0; calYear++; } renderCalendar(); });
+  document.getElementById('calDetailClose')?.addEventListener('click', () => document.getElementById('calDetail')?.classList.add('hidden'));
 }

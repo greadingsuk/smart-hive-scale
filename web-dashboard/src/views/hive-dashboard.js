@@ -243,11 +243,16 @@ export async function renderHiveDashboard(app, params) {
             <div class="section-subtitle">IoT Sensors</div>
             <a href="#/apiary-dashboard" class="text-[10px] uppercase tracking-wider text-hive-gold hover:opacity-80">View Charts →</a>
           </div>
-          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center" id="iotCards-${hive.id}">
+          <div class="grid grid-cols-2 sm:grid-cols-5 gap-3 text-center" id="iotCards-${hive.id}">
             <div class="rounded-xl p-3" style="background:var(--hive-bg)">
               <div class="text-[10px] text-hive-muted uppercase mb-1">Hive Temp</div>
               <div class="text-lg font-bold text-hive-text" id="iotTemp">—</div>
               <div class="text-[10px] text-hive-muted">°C (DS18B20)</div>
+            </div>
+            <div class="rounded-xl p-3" style="background:var(--hive-bg)">
+              <div class="text-[10px] text-hive-muted uppercase mb-1">Box Temp</div>
+              <div class="text-lg font-bold text-hive-text" id="iotBoxTemp">—</div>
+              <div class="text-[10px] text-hive-muted">°C (Enclosure)</div>
             </div>
             <div class="rounded-xl p-3" style="background:var(--hive-bg)">
               <div class="text-[10px] text-hive-muted uppercase mb-1">Weight</div>
@@ -424,6 +429,7 @@ export async function renderHiveDashboard(app, params) {
         const set = (id, val) => { const el = document.getElementById(id); if (el && val != null) el.textContent = val; };
 
         if (latest.internalTemp != null && latest.internalTemp > -100) set('iotTemp', latest.internalTemp.toFixed(1));
+        if (latest.legTemp != null && latest.legTemp > -100 && latest.legTemp !== 85) set('iotBoxTemp', latest.legTemp.toFixed(1));
         if (latest.weight > 0) set('iotWeight', latest.weight.toFixed(1));
         if (latest.batteryVoltage > 0) set('iotBattery', latest.batteryVoltage.toFixed(2));
         if (latest.deviceMAC) set('iotDevice', latest.deviceMAC);

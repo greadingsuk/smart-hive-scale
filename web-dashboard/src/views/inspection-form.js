@@ -53,7 +53,7 @@ export async function renderInspectionForm(app) {
               <div>
                 <span class="section-subtitle block mb-3">Colony Health</span>
                 <div class="space-y-3">
-                  ${['queenSeen:Queen Spotted', 'broodSpotted:Brood Spotted', 'queenCells:Queen Cells Spotted'].map(item => {
+                  ${['queenSeen:Queen Spotted', 'eggsSpotted:Eggs Spotted', 'broodSpotted:Brood Spotted', 'queenCells:Queen Cells Spotted'].map(item => {
                     const [key, label] = item.split(':');
                     return `<div class="flex items-center justify-between">
                       <span class="text-sm text-hive-text">${label}</span>
@@ -64,6 +64,27 @@ export async function renderInspectionForm(app) {
                       </label>
                     </div>`;
                   }).join('')}
+                  <!-- Queen cell type sub-options (hidden until queen cells toggled) -->
+                  <div id="queenCellTypeRow" class="hidden pl-4 pt-2 space-y-1" style="border-left:2px solid var(--hive-gold)">
+                    <div class="text-[11px] text-hive-muted uppercase tracking-wider mb-1">Cell Type</div>
+                    ${['swarmCells:Swarm Cells — bottom/edges, colony preparing to swarm',
+                       'supersedureCells:Supersedure Cells — face centre, replacing failing queen',
+                       'emergencyCells:Emergency Cells — scattered, queenless colony raising queen'].map(item => {
+                      const [key, label] = item.split(':');
+                      return `<label class="flex items-start gap-2 cursor-pointer py-1">
+                        <input type="radio" name="queenCellType" value="${key}" class="mt-0.5 accent-[var(--hive-gold)]">
+                        <span class="text-xs text-hive-text leading-tight">${label}</span>
+                      </label>`;
+                    }).join('')}
+                  </div>
+                </div>
+                <!-- Smart suggestion banner -->
+                <div id="smartSuggestion" class="hidden mt-3 rounded-xl p-3 text-xs" style="background:var(--hive-bg);border:1px solid var(--hive-gold)30">
+                  <div class="flex items-center gap-2 mb-1">
+                    <svg class="w-3.5 h-3.5 text-hive-gold flex-shrink-0" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 18v-5.25m0 0a6.01 6.01 0 001.5-.189m-1.5.189a6.01 6.01 0 01-1.5-.189m3.75 7.478a12.06 12.06 0 01-4.5 0m3.75 2.383a14.406 14.406 0 01-3 0M14.25 18v-.192c0-.983.658-1.823 1.508-2.316a7.5 7.5 0 10-7.517 0c.85.493 1.509 1.333 1.509 2.316V18"/></svg>
+                    <span class="font-semibold text-hive-gold" id="suggestTitle">Suggestion</span>
+                  </div>
+                  <p class="text-hive-text leading-relaxed" id="suggestText"></p>
                 </div>
               </div>
               <div class="space-y-4">
@@ -174,10 +195,61 @@ export async function renderInspectionForm(app) {
     </main>
   `;
 
-  const healthState = { queenSeen: false, broodSpotted: false, queenCells: false };
+  const healthState = { queenSeen: false, eggsSpotted: false, broodSpotted: false, queenCells: false };
+  let queenCellType = '';
+
   document.querySelectorAll('[data-health]').forEach(cb => {
-    cb.addEventListener('change', () => { healthState[cb.dataset.health] = cb.checked; });
+    cb.addEventListener('change', () => {
+      healthState[cb.dataset.health] = cb.checked;
+      // Show/hide queen cell type sub-options
+      if (cb.dataset.health === 'queenCells') {
+        document.getElementById('queenCellTypeRow')?.classList.toggle('hidden', !cb.checked);
+        if (!cb.checked) { queenCellType = ''; document.querySelectorAll('[name="queenCellType"]').forEach(r => r.checked = false); }
+      }
+      updateSmartSuggestion();
+      updateAutoTaskPreview();
+    });
   });
+  document.querySelectorAll('[name="queenCellType"]').forEach(r => {
+    r.addEventListener('change', () => { queenCellType = r.value; updateSmartSuggestion(); updateAutoTaskPreview(); });
+  });
+
+  // Smart suggestion engine
+  function updateSmartSuggestion() {
+    const box = document.getElementById('smartSuggestion');
+    const title = document.getElementById('suggestTitle');
+    const text = document.getElementById('suggestText');
+    let suggestion = null;
+
+    if (healthState.queenCells && queenCellType === 'swarmCells') {
+      suggestion = { title: 'Swarm cells — act now', text: 'Perform swarm management (artificial swarm or Pagden). Inspect again in +7 days to knock down any remaining cells. Weekly cycle is critical until swarm impulse passes.', days: 7 };
+    } else if (healthState.queenCells && queenCellType === 'supersedureCells') {
+      suggestion = { title: 'Supersedure — leave alone', text: 'The colony is replacing a failing queen naturally. Do NOT knock down these cells. Leave the colony undisturbed for 21 days to allow the virgin to emerge, mate and begin laying.', days: 21 };
+    } else if (healthState.queenCells && queenCellType === 'emergencyCells') {
+      suggestion = { title: 'Emergency cells — queenless colony', text: 'The colony has no queen and is raising an emergency replacement. Leave undisturbed for 21 days. Check then for eggs — if laying, the new queen has mated successfully.', days: 21 };
+    } else if (healthState.queenCells) {
+      suggestion = { title: 'Queen cells spotted', text: 'Select the cell type above to get specific management advice and timing.', days: null };
+    } else if (!healthState.queenSeen && !healthState.eggsSpotted && !healthState.broodSpotted) {
+      suggestion = { title: 'No queen, eggs or brood — possible queenless', text: 'Urgent: confirm queen status. Check for very young larvae or eggs you may have missed. If truly queenless with no cells, consider introducing a new queen or combining with another colony. Re-inspect in +7 days.', days: 7 };
+    } else if (!healthState.queenSeen && healthState.eggsSpotted) {
+      suggestion = { title: 'Queen not seen but eggs present — healthy', text: 'Fresh eggs confirm the queen was laying in the last 3 days. No action needed. Continue normal weekly inspections.', days: 7 };
+    } else if (!healthState.queenSeen && !healthState.eggsSpotted && healthState.broodSpotted) {
+      suggestion = { title: 'No queen or eggs but brood present', text: 'Brood without eggs suggests the queen may have stopped laying or been lost recently. Re-inspect in +7 days to look for eggs or emergency queen cells.', days: 7 };
+    }
+
+    if (suggestion) {
+      box.classList.remove('hidden');
+      title.textContent = suggestion.title;
+      text.textContent = suggestion.text;
+      // Auto-select the suggested preset if available
+      if (suggestion.days) {
+        const presetBtn = document.querySelector(`.next-insp-btn[data-days="${suggestion.days}"]`);
+        if (presetBtn && !nextInspInput.value) presetBtn.click();
+      }
+    } else {
+      box.classList.add('hidden');
+    }
+  }
 
   let selectedTemperament = '';
   document.querySelectorAll('.temperament-pill').forEach(btn => {
@@ -226,8 +298,16 @@ export async function renderInspectionForm(app) {
     const preview = document.getElementById('autoTasksPreview');
     const hiveName = document.getElementById('hiveSelect').value || '(select hive)';
     const tasks = [];
-    if (healthState.queenCells) tasks.push({ text: `Swarm check — inspect queen cells on ${hiveName}`, days: 7 });
-    if (!healthState.queenSeen && healthState.broodSpotted) tasks.push({ text: `Verify queen status — ${hiveName}`, days: 7 });
+    if (healthState.queenCells && queenCellType === 'swarmCells') {
+      tasks.push({ text: `Swarm management check \u2014 ${hiveName}`, days: 7 });
+    } else if (healthState.queenCells && queenCellType === 'supersedureCells') {
+      tasks.push({ text: `Check for laying queen (supersedure) \u2014 ${hiveName}`, days: 21 });
+    } else if (healthState.queenCells && queenCellType === 'emergencyCells') {
+      tasks.push({ text: `Check for laying queen (emergency) \u2014 ${hiveName}`, days: 21 });
+    }
+    if (!healthState.queenSeen && !healthState.eggsSpotted && !healthState.queenCells) {
+      tasks.push({ text: `Urgent: verify queen status \u2014 ${hiveName}`, days: 7 });
+    }
     if (tasks.length) {
       preview.classList.remove('hidden');
       preview.innerHTML = '<div class="text-[11px] text-hive-muted uppercase tracking-wider mb-1">Auto-created tasks:</div>' +
@@ -235,6 +315,7 @@ export async function renderInspectionForm(app) {
     } else { preview.classList.add('hidden'); preview.innerHTML = ''; }
   }
   document.querySelectorAll('[data-health]').forEach(cb => cb.addEventListener('change', updateAutoTaskPreview));
+  document.querySelectorAll('[name="queenCellType"]').forEach(r => r.addEventListener('change', updateAutoTaskPreview));
   document.getElementById('hiveSelect')?.addEventListener('change', updateAutoTaskPreview);
 
   async function fillWeather() {
@@ -274,14 +355,22 @@ export async function renderInspectionForm(app) {
     // Auto-create follow-up tasks based on observations
     const inspDate = new Date(inspection.date);
     const autoTasks = [];
-    if (healthState.queenCells) {
+    if (healthState.queenCells && queenCellType === 'swarmCells') {
       const due = new Date(inspDate); due.setDate(due.getDate() + 7);
-      addTask(`Swarm check \u2014 inspect queen cells on ${hiveName}`, due.toISOString().slice(0, 10));
+      addTask(`Swarm management check \u2014 ${hiveName}`, due.toISOString().slice(0, 10));
       autoTasks.push('Swarm check +7d');
+    } else if (healthState.queenCells && queenCellType === 'supersedureCells') {
+      const due = new Date(inspDate); due.setDate(due.getDate() + 21);
+      addTask(`Check for laying queen (supersedure) \u2014 ${hiveName}`, due.toISOString().slice(0, 10));
+      autoTasks.push('Supersedure check +21d');
+    } else if (healthState.queenCells && queenCellType === 'emergencyCells') {
+      const due = new Date(inspDate); due.setDate(due.getDate() + 21);
+      addTask(`Check for laying queen (emergency) \u2014 ${hiveName}`, due.toISOString().slice(0, 10));
+      autoTasks.push('Emergency queen check +21d');
     }
-    if (!healthState.queenSeen && healthState.broodSpotted) {
+    if (!healthState.queenSeen && !healthState.eggsSpotted && !healthState.queenCells) {
       const due = new Date(inspDate); due.setDate(due.getDate() + 7);
-      addTask(`Verify queen status \u2014 ${hiveName}`, due.toISOString().slice(0, 10));
+      addTask(`Urgent: verify queen status \u2014 ${hiveName}`, due.toISOString().slice(0, 10));
       autoTasks.push('Queen verify +7d');
     }
     // Schedule next inspection if set
