@@ -113,7 +113,6 @@ export async function renderInspectionForm(app) {
                 </div>
               </div>
             </div>
-          </div>
 
           <div class="border-t pt-4 mt-4" style="border-color:var(--hive-border)">
             <label class="section-subtitle block mb-2">Brood Pattern</label>
