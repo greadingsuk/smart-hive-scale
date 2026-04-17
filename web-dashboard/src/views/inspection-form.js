@@ -2,7 +2,7 @@
  * Inspection Form — luxury heritage design with progressive disclosure.
  */
 import { renderHeader } from '../components/ui.js';
-import { getHives, APIARY, saveInspection } from '../api/dataverse.js';
+import { getHives, APIARY, saveInspection, addTask } from '../api/dataverse.js';
 import { fetchCurrentWeather } from '../api/weather.js';
 
 function showToast(message, duration = 3000) {
@@ -148,6 +148,26 @@ export async function renderInspectionForm(app) {
           </div>
         </section>
 
+        <!-- Card 4: Schedule Next Inspection -->
+        <section class="card p-5">
+          <div class="flex items-center justify-between mb-3">
+            <span class="section-subtitle">Schedule Next Inspection</span>
+            <span id="nextInspLabel" class="text-xs text-hive-gold"></span>
+          </div>
+          <div class="flex flex-wrap gap-2 mb-3">
+            <button type="button" data-days="7" class="next-insp-btn btn-secondary text-xs py-1.5 px-3">+7d Swarm Check</button>
+            <button type="button" data-days="9" class="next-insp-btn btn-secondary text-xs py-1.5 px-3">+9d Cell Knockdown</button>
+            <button type="button" data-days="14" class="next-insp-btn btn-secondary text-xs py-1.5 px-3">+14d Routine</button>
+            <button type="button" data-days="21" class="next-insp-btn btn-secondary text-xs py-1.5 px-3">+21d Queen Check</button>
+            <button type="button" data-days="28" class="next-insp-btn btn-secondary text-xs py-1.5 px-3">+28d Laying Verify</button>
+          </div>
+          <div>
+            <label class="text-[11px] text-hive-muted block mb-1">Or pick a date</label>
+            <input type="date" id="nextInspectionDate" class="input-field">
+          </div>
+          <div id="autoTasksPreview" class="mt-3 space-y-1 hidden"></div>
+        </section>
+
         <div class="flex gap-3 pt-2">
           <button type="submit" id="saveBtn" class="btn-primary flex-1 py-3">Save Inspection</button>
           <a href="#/apiary" class="btn-secondary flex-1 py-3 text-center">Cancel</a>
@@ -182,6 +202,43 @@ export async function renderInspectionForm(app) {
 
   document.getElementById('fetchWeightBtn').addEventListener('click', () => showToast('IoT weight fetch not yet connected'));
 
+  // Next inspection preset buttons
+  const nextInspInput = document.getElementById('nextInspectionDate');
+  const nextInspLabel = document.getElementById('nextInspLabel');
+  const formatDueDate = (d) => d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+
+  document.querySelectorAll('.next-insp-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const days = parseInt(btn.dataset.days, 10);
+      const inspDate = new Date(document.getElementById('inspectionDate').value || Date.now());
+      const due = new Date(inspDate); due.setDate(due.getDate() + days);
+      nextInspInput.value = due.toISOString().slice(0, 10);
+      nextInspLabel.textContent = formatDueDate(due);
+      document.querySelectorAll('.next-insp-btn').forEach(b => b.className = 'next-insp-btn btn-secondary text-xs py-1.5 px-3');
+      btn.className = 'next-insp-btn btn-primary text-xs py-1.5 px-3';
+    });
+  });
+  nextInspInput.addEventListener('change', () => {
+    if (nextInspInput.value) nextInspLabel.textContent = formatDueDate(new Date(nextInspInput.value));
+    document.querySelectorAll('.next-insp-btn').forEach(b => b.className = 'next-insp-btn btn-secondary text-xs py-1.5 px-3');
+  });
+
+  // Auto-task preview based on health toggles
+  function updateAutoTaskPreview() {
+    const preview = document.getElementById('autoTasksPreview');
+    const hiveName = document.getElementById('hiveSelect').value || '(select hive)';
+    const tasks = [];
+    if (healthState.queenCells) tasks.push({ text: `Swarm check — inspect queen cells on ${hiveName}`, days: 7 });
+    if (!healthState.queenSeen && healthState.broodSpotted) tasks.push({ text: `Verify queen status — ${hiveName}`, days: 7 });
+    if (tasks.length) {
+      preview.classList.remove('hidden');
+      preview.innerHTML = '<div class="text-[11px] text-hive-muted uppercase tracking-wider mb-1">Auto-created tasks:</div>' +
+        tasks.map(t => `<div class="flex items-center gap-2 text-xs"><span class="w-1.5 h-1.5 rounded-full bg-hive-gold flex-shrink-0"></span><span class="text-hive-text">${t.text}</span><span class="text-hive-muted ml-auto">+${t.days}d</span></div>`).join('');
+    } else { preview.classList.add('hidden'); preview.innerHTML = ''; }
+  }
+  document.querySelectorAll('[data-health]').forEach(cb => cb.addEventListener('change', updateAutoTaskPreview));
+  document.getElementById('hiveSelect')?.addEventListener('change', updateAutoTaskPreview);
+
   async function fillWeather() {
     const status = document.getElementById('weatherStatus');
     try {
@@ -215,7 +272,29 @@ export async function renderInspectionForm(app) {
       weatherConditions: document.getElementById('weatherConditions').value||null,
     };
     saveInspection(inspection);
-    showToast('Inspection saved for ' + hiveName);
+
+    // Auto-create follow-up tasks based on observations
+    const inspDate = new Date(inspection.date);
+    const autoTasks = [];
+    if (healthState.queenCells) {
+      const due = new Date(inspDate); due.setDate(due.getDate() + 7);
+      addTask(`Swarm check \u2014 inspect queen cells on ${hiveName}`, due.toISOString().slice(0, 10));
+      autoTasks.push('Swarm check +7d');
+    }
+    if (!healthState.queenSeen && healthState.broodSpotted) {
+      const due = new Date(inspDate); due.setDate(due.getDate() + 7);
+      addTask(`Verify queen status \u2014 ${hiveName}`, due.toISOString().slice(0, 10));
+      autoTasks.push('Queen verify +7d');
+    }
+    // Schedule next inspection if set
+    const nextDate = document.getElementById('nextInspectionDate')?.value;
+    if (nextDate) {
+      addTask(`Inspect ${hiveName}`, nextDate);
+      autoTasks.push('Next inspection');
+    }
+
+    const taskMsg = autoTasks.length ? ` (${autoTasks.length} task${autoTasks.length > 1 ? 's' : ''} created)` : '';
+    showToast(`Inspection saved for ${hiveName}${taskMsg}`);
     setTimeout(() => { window.location.hash = '#/apiary'; }, 1500);
   });
 }

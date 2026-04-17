@@ -3,7 +3,7 @@
  */
 import { renderHeader, strengthBar, formatDate, activityBadge } from '../components/ui.js';
 import { renderHiveStack } from '../components/hive-visual.js';
-import { getHives, getHiveActivity, getCustomActivity, getHiveNote, setHiveNote, getAllActivity, splitHive, combineHives, deadOutHive, moveHive, convertHive, sellHive, moveQueen, getActiveHives, fetchTelemetry } from '../api/dataverse.js';
+import { getHives, getHiveActivity, getCustomActivity, getHiveNote, setHiveNote, getAllActivity, splitHive, combineHives, deadOutHive, moveHive, convertHive, sellHive, moveQueen, getActiveHives, fetchTelemetry, addTask } from '../api/dataverse.js';
 import { fetchSwitchBot, SWITCHBOT_DEVICES } from '../api/weather.js';
 
 export async function renderHiveDashboard(app, params) {
@@ -512,6 +512,9 @@ export async function renderHiveDashboard(app, params) {
     if (newNuc && splitMoveQueen) {
       moveQueen(hive.id, newNuc.id, `Queen moved during split to ${name}`);
     }
+    // Auto-create follow-up task: check for laying queen in 28 days
+    const due = new Date(); due.setDate(due.getDate() + 28);
+    addTask(`Check for laying queen \u2014 ${name}`, due.toISOString().slice(0, 10));
     closeSplitModal();
     window.location.hash = '#/apiary';
   });
