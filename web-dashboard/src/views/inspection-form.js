@@ -59,7 +59,7 @@ export async function renderInspectionForm(app) {
           </div>
 
           <div id="fullInspectionFields">
-          <div class="border-t pt-4 mt-4" style="border-color:var(--hive-border)">
+          <div class="border-t pt-4 mt-4 full-only" style="border-color:var(--hive-border)">
                 <div class="space-y-3">
                   ${['queenSeen:Queen Spotted', 'eggsSpotted:Eggs Spotted', 'broodSpotted:Brood Spotted', 'queenCells:Queen Cells Spotted'].map(item => {
                     const [key, label] = item.split(':');
@@ -114,14 +114,14 @@ export async function renderInspectionForm(app) {
               </div>
             </div>
 
-          <div class="border-t pt-4 mt-4" style="border-color:var(--hive-border)">
+          <div class="border-t pt-4 mt-4 full-only" style="border-color:var(--hive-border)">
             <label class="section-subtitle block mb-2">Brood Pattern</label>
             <select id="broodPattern" class="input-field">
               ${BROOD_PATTERNS.map(p => `<option value="${p}">${p || 'Not assessed'}</option>`).join('')}
             </select>
           </div>
 
-          <div class="border-t pt-4 mt-4" style="border-color:var(--hive-border)">
+          <div class="border-t pt-4 mt-4 full-only" style="border-color:var(--hive-border)">
             <h3 class="section-subtitle mb-3">Issues</h3>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
@@ -213,15 +213,15 @@ export async function renderInspectionForm(app) {
       inspectionType = btn.dataset.insptype;
       document.querySelectorAll('.insptype-btn').forEach(b => b.className = 'insptype-btn btn-secondary flex-1 py-2 text-xs');
       btn.className = 'insptype-btn btn-primary flex-1 py-2 text-xs';
-      const fullFields = document.getElementById('fullInspectionFields');
+      const fullFields = document.querySelectorAll('.full-only');
       const scheduleSection = document.getElementById('scheduleSection');
       const hint = document.getElementById('insptypeHint');
       if (inspectionType === 'maintenance') {
-        fullFields?.classList.add('hidden');
+        fullFields.forEach(el => el.classList.add('hidden'));
         scheduleSection?.classList.add('hidden');
         hint?.classList.remove('hidden');
       } else {
-        fullFields?.classList.remove('hidden');
+        fullFields.forEach(el => el.classList.remove('hidden'));
         scheduleSection?.classList.remove('hidden');
         hint?.classList.add('hidden');
       }
