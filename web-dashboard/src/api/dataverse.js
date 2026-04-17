@@ -346,6 +346,7 @@ export function setHiveNote(hiveId, text) {
 export function getApiaryTasks(includeCompleted = false) { const tasks = _tasks.filter(t => !t.deleted); return includeCompleted ? tasks : tasks.filter(t => !t.done); }
 export function toggleTask(id) { const t = _tasks.find(x => x.id === id); if (t) { t.done = !t.done; writeAsync('tasks', 'update', mapTaskToDv(t), t._dvId || id); } }
 export function deleteTask(id) { const t = _tasks.find(x => x.id === id); if (t) { t.deleted = true; writeAsync('tasks', 'update', mapTaskToDv(t), t._dvId || id); } }
+export function editTask(id, text, due) { const t = _tasks.find(x => x.id === id); if (t) { t.text = text; t.due = due; writeAsync('tasks', 'update', mapTaskToDv(t), t._dvId || id); } }
 export function addTask(text, due) { const task = { id: 't' + Date.now(), text, done: false, due, deleted: false }; _tasks.unshift(task); writeAsync('tasks', 'create', mapTaskToDv(task)); }
 
 // Devices — ESP32 hive stands, stored in Dataverse (gr_device)
