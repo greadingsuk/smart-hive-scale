@@ -123,21 +123,6 @@ export async function renderInspectionForm(app) {
           </div>
 
           <div class="border-t pt-4 mt-4" style="border-color:var(--hive-border)">
-            <div class="flex items-center justify-between mb-3">
-              <span class="section-subtitle">Hive Weight</span>
-              <button type="button" id="fetchWeightBtn" class="section-subtitle text-hive-gold flex items-center gap-1">
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="1.25" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-                Fetch Live
-              </button>
-            </div>
-            <div class="grid grid-cols-3 gap-4">
-              <div><label class="text-[11px] text-hive-muted block mb-1">Left (kg)</label><input type="number" id="weightLeft" class="input-field" step="0.01" placeholder="0.00"></div>
-              <div><label class="text-[11px] text-hive-muted block mb-1">Right (kg)</label><input type="number" id="weightRight" class="input-field" step="0.01" placeholder="0.00"></div>
-              <div><label class="text-[11px] text-hive-muted block mb-1">Total (kg)</label><input type="number" id="weightTotal" class="input-field" step="0.01" placeholder="Auto"></div>
-            </div>
-          </div>
-
-          <div class="border-t pt-4 mt-4" style="border-color:var(--hive-border)">
             <h3 class="section-subtitle mb-3">Issues</h3>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
@@ -155,6 +140,21 @@ export async function renderInspectionForm(app) {
             </div>
           </div>
           </div><!-- /fullInspectionFields -->
+
+          <div class="border-t pt-4 mt-4" style="border-color:var(--hive-border)">
+            <div class="flex items-center justify-between mb-3">
+              <span class="section-subtitle">Hive Weight</span>
+              <button type="button" id="fetchWeightBtn" class="section-subtitle text-hive-gold flex items-center gap-1">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="1.25" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                Fetch Live
+              </button>
+            </div>
+            <div class="grid grid-cols-3 gap-4">
+              <div><label class="text-[11px] text-hive-muted block mb-1">Left (kg)</label><input type="number" id="weightLeft" class="input-field" step="0.01" placeholder="0.00"></div>
+              <div><label class="text-[11px] text-hive-muted block mb-1">Right (kg)</label><input type="number" id="weightRight" class="input-field" step="0.01" placeholder="0.00"></div>
+              <div><label class="text-[11px] text-hive-muted block mb-1">Total (kg)</label><input type="number" id="weightTotal" class="input-field" step="0.01" placeholder="Auto"></div>
+            </div>
+          </div>
         </section>
 
         <!-- Card 3: Notes & Environment -->
@@ -179,7 +179,7 @@ export async function renderInspectionForm(app) {
         </section>
 
         <!-- Card 4: Schedule Next Inspection -->
-        <section class="card p-5">
+        <section id="scheduleSection" class="card p-5">
           <div class="flex items-center justify-between mb-3">
             <span class="section-subtitle">Schedule Next Inspection</span>
             <span id="nextInspLabel" class="text-xs text-hive-gold"></span>
@@ -215,12 +215,15 @@ export async function renderInspectionForm(app) {
       document.querySelectorAll('.insptype-btn').forEach(b => b.className = 'insptype-btn btn-secondary flex-1 py-2 text-xs');
       btn.className = 'insptype-btn btn-primary flex-1 py-2 text-xs';
       const fullFields = document.getElementById('fullInspectionFields');
+      const scheduleSection = document.getElementById('scheduleSection');
       const hint = document.getElementById('insptypeHint');
       if (inspectionType === 'maintenance') {
         fullFields?.classList.add('hidden');
+        scheduleSection?.classList.add('hidden');
         hint?.classList.remove('hidden');
       } else {
         fullFields?.classList.remove('hidden');
+        scheduleSection?.classList.remove('hidden');
         hint?.classList.add('hidden');
       }
     });
