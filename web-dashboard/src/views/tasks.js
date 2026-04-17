@@ -18,10 +18,13 @@ export function renderTasks(app) {
           ${tasks.map(t => `
             <div class="card flex items-center gap-3 p-4" data-id="${t.id}">
               <input type="checkbox" ${t.done ? 'checked' : ''} class="w-4 h-4 rounded accent-[var(--hive-gold)] toggle-task" data-tid="${t.id}">
-              <div class="flex-1 min-w-0 cursor-pointer edit-task" data-tid="${t.id}">
+              <div class="flex-1 min-w-0">
                 <span class="text-sm ${t.done ? 'line-through text-hive-muted' : 'text-hive-text'}">${t.text}</span>
                 <span class="text-[10px] uppercase tracking-wider block mt-0.5 ${t.done ? 'text-hive-muted' : 'text-hive-gold'}">${t.due ? formatDate(t.due) : ''}</span>
               </div>
+              <button class="text-hive-muted hover:text-hive-gold edit-task p-1" data-tid="${t.id}" title="Edit">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z"/></svg>
+              </button>
               <button class="text-hive-muted hover:text-hive-red delete-task p-1" data-tid="${t.id}" title="Delete">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.25" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
               </button>
@@ -90,10 +93,10 @@ export function renderTasks(app) {
     document.getElementById('taskModalClose')?.addEventListener('click', closeModal);
     document.getElementById('taskModalCancel')?.addEventListener('click', closeModal);
 
-    // Click task text to edit
-    app.querySelectorAll('.edit-task').forEach(el => {
-      el.addEventListener('click', () => {
-        const task = tasks.find(t => t.id === el.dataset.tid);
+    // Click edit button to edit
+    app.querySelectorAll('.edit-task').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const task = tasks.find(t => t.id === btn.dataset.tid);
         if (task) openModal(task);
       });
     });

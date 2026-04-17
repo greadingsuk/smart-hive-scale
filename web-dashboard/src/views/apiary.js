@@ -147,11 +147,14 @@ export async function renderApiary(app) {
           </div>
           <div class="card space-y-3" id="taskList">
             ${tasks.map(t => `
-              <label class="flex items-center gap-3 cursor-pointer task-item" data-task-id="${t.id}">
+              <div class="flex items-center gap-3 task-item" data-task-id="${t.id}">
                 <input type="checkbox" class="w-4 h-4 rounded accent-[var(--hive-gold)] task-check" data-task="${t.id}">
                 <span class="text-sm flex-1 text-hive-text">${t.text}</span>
                 <span class="text-[10px] uppercase tracking-wider text-hive-gold">${formatDate(t.due)}</span>
-              </label>
+                <a href="#/tasks" class="text-hive-muted hover:text-hive-gold p-1" title="Edit">
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z"/></svg>
+                </a>
+              </div>
             `).join('') || `
               <div class="text-center py-4">
                 <svg class="w-8 h-8 mx-auto text-hive-muted/40 mb-2" fill="none" stroke="currentColor" stroke-width="1" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
