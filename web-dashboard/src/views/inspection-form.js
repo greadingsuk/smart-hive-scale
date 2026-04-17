@@ -48,10 +48,18 @@ export async function renderInspectionForm(app) {
             </div>
           </div>
 
+          <!-- Inspection Type Toggle -->
           <div class="border-t pt-4 mt-4" style="border-color:var(--hive-border)">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <span class="section-subtitle block mb-3">Colony Health</span>
+            <span class="section-subtitle block mb-2">Inspection Type</span>
+            <div class="flex gap-2">
+              <button type="button" data-insptype="full" class="insptype-btn btn-primary flex-1 py-2 text-xs">Full Inspection</button>
+              <button type="button" data-insptype="maintenance" class="insptype-btn btn-secondary flex-1 py-2 text-xs">Maintenance / External</button>
+            </div>
+            <p id="insptypeHint" class="text-[10px] text-hive-muted mt-1.5 hidden">External check only — weight, notes and weather. Hive not opened.</p>
+          </div>
+
+          <div id="fullInspectionFields">
+          <div class="border-t pt-4 mt-4" style="border-color:var(--hive-border)">
                 <div class="space-y-3">
                   ${['queenSeen:Queen Spotted', 'eggsSpotted:Eggs Spotted', 'broodSpotted:Brood Spotted', 'queenCells:Queen Cells Spotted'].map(item => {
                     const [key, label] = item.split(':');
@@ -146,6 +154,7 @@ export async function renderInspectionForm(app) {
               </div>
             </div>
           </div>
+          </div><!-- /fullInspectionFields -->
         </section>
 
         <!-- Card 3: Notes & Environment -->
@@ -197,6 +206,25 @@ export async function renderInspectionForm(app) {
 
   const healthState = { queenSeen: false, eggsSpotted: false, broodSpotted: false, queenCells: false };
   let queenCellType = '';
+  let inspectionType = 'full';
+
+  // Inspection type toggle
+  document.querySelectorAll('.insptype-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      inspectionType = btn.dataset.insptype;
+      document.querySelectorAll('.insptype-btn').forEach(b => b.className = 'insptype-btn btn-secondary flex-1 py-2 text-xs');
+      btn.className = 'insptype-btn btn-primary flex-1 py-2 text-xs';
+      const fullFields = document.getElementById('fullInspectionFields');
+      const hint = document.getElementById('insptypeHint');
+      if (inspectionType === 'maintenance') {
+        fullFields?.classList.add('hidden');
+        hint?.classList.remove('hidden');
+      } else {
+        fullFields?.classList.remove('hidden');
+        hint?.classList.add('hidden');
+      }
+    });
+  });
 
   document.querySelectorAll('[data-health]').forEach(cb => {
     cb.addEventListener('change', () => {
@@ -338,13 +366,18 @@ export async function renderInspectionForm(app) {
     const saveBtn = document.getElementById('saveBtn');
     saveBtn.disabled = true;
     saveBtn.textContent = 'Saving...';
-    const diseases = []; document.querySelectorAll('[data-disease]:checked').forEach(cb => diseases.push(cb.dataset.disease));
-    const pests = []; document.querySelectorAll('[data-pest]:checked').forEach(cb => pests.push(cb.dataset.pest));
+    const isMaint = inspectionType === 'maintenance';
+    const diseases = []; if (!isMaint) document.querySelectorAll('[data-disease]:checked').forEach(cb => diseases.push(cb.dataset.disease));
+    const pests = []; if (!isMaint) document.querySelectorAll('[data-pest]:checked').forEach(cb => pests.push(cb.dataset.pest));
     const inspection = {
-      date: document.getElementById('inspectionDate').value || new Date().toISOString().slice(0, 10), type: 'Inspection', hive: hiveName,
-      strength: parseInt(slider.value, 10), queenSeen: healthState.queenSeen,
-      broodSpotted: healthState.broodSpotted, queenCells: healthState.queenCells,
-      temperament: selectedTemperament, broodPattern: document.getElementById('broodPattern').value,
+      date: document.getElementById('inspectionDate').value || new Date().toISOString().slice(0, 10),
+      type: isMaint ? 'Maintenance' : 'Inspection', hive: hiveName,
+      strength: isMaint ? null : parseInt(slider.value, 10),
+      queenSeen: isMaint ? false : healthState.queenSeen,
+      broodSpotted: isMaint ? false : healthState.broodSpotted,
+      queenCells: isMaint ? false : healthState.queenCells,
+      temperament: isMaint ? '' : selectedTemperament,
+      broodPattern: isMaint ? '' : document.getElementById('broodPattern').value,
       weightLeft: parseFloat(wl.value)||null, weightRight: parseFloat(wr.value)||null, weightTotal: parseFloat(wt.value)||null,
       diseases, pests, notes: document.getElementById('notes').value,
       weatherTemp: parseFloat(document.getElementById('weatherTemp').value)||null,
@@ -352,9 +385,10 @@ export async function renderInspectionForm(app) {
     };
     saveInspection(inspection);
 
-    // Auto-create follow-up tasks based on observations
+    // Auto-create follow-up tasks based on observations (skip in maintenance mode)
     const inspDate = new Date(inspection.date);
     const autoTasks = [];
+    if (!isMaint) {
     if (healthState.queenCells && queenCellType === 'swarmCells') {
       const due = new Date(inspDate); due.setDate(due.getDate() + 7);
       addTask(`Swarm management check \u2014 ${hiveName}`, due.toISOString().slice(0, 10));
@@ -373,6 +407,7 @@ export async function renderInspectionForm(app) {
       addTask(`Urgent: verify queen status \u2014 ${hiveName}`, due.toISOString().slice(0, 10));
       autoTasks.push('Queen verify +7d');
     }
+    } // end if (!isMaint)
     // Schedule next inspection if set
     const nextDate = document.getElementById('nextInspectionDate')?.value;
     if (nextDate) {

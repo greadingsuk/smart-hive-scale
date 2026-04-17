@@ -72,7 +72,7 @@ export function strengthBar(percent) {
 }
 
 export function activityBadge(type) {
-  const s = { 'Inspection':'pill-amber', 'Feed':'pill-blue', 'Treatment':'pill-red', 'Harvest':'pill-green', 'Hive Added':'pill-green', 'Hive Death':'pill-red', 'Split':'pill-amber', 'Combined':'pill-blue', 'Converted':'pill-amber', 'Moved':'pill-blue', 'Sold':'pill-red', 'Note':'pill-blue', 'Build Change':'pill-blue', 'Queen Moved':'pill-green' };
+  const s = { 'Inspection':'pill-amber', 'Maintenance':'pill-blue', 'Feed':'pill-blue', 'Treatment':'pill-red', 'Harvest':'pill-green', 'Hive Added':'pill-green', 'Hive Death':'pill-red', 'Split':'pill-amber', 'Combined':'pill-blue', 'Converted':'pill-amber', 'Moved':'pill-blue', 'Sold':'pill-red', 'Note':'pill-blue', 'Build Change':'pill-blue', 'Queen Moved':'pill-green' };
   return `<span class="${s[type]||'pill-amber'}">${type}</span>`;
 }
 
