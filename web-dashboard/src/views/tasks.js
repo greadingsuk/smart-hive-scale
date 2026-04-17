@@ -30,6 +30,38 @@ export function renderTasks(app) {
           ${tasks.length === 0 ? '<p class="text-hive-muted text-sm text-center py-8">No tasks yet.</p>' : ''}
         </div>
       </main>
+
+      <!-- Add Task Modal -->
+      <div id="taskModal" class="fixed inset-0 z-[100] hidden">
+        <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" id="taskModalBackdrop"></div>
+        <div class="absolute inset-x-4 top-1/2 -translate-y-1/2 max-w-lg mx-auto">
+          <div class="rounded-2xl overflow-hidden" style="background:var(--hive-surface);border:1px solid var(--hive-border);box-shadow:0 25px 50px rgba(0,0,0,0.4)">
+            <div class="p-5" style="border-bottom:1px solid var(--hive-border)">
+              <div class="flex items-center justify-between">
+                <h3 class="font-serif text-lg font-medium text-hive-text">New Task</h3>
+                <button id="taskModalClose" class="p-1 text-hive-muted hover:text-hive-text">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+              </div>
+              <p class="text-xs text-hive-muted mt-1">${new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
+            </div>
+            <div class="p-5 space-y-4">
+              <div>
+                <label class="block text-xs text-hive-muted mb-1">Task <span class="text-hive-red">*</span></label>
+                <input type="text" id="taskText" class="input-field" placeholder="e.g. Check queen cells on H2">
+              </div>
+              <div>
+                <label class="block text-xs text-hive-muted mb-1">Due Date (optional)</label>
+                <input type="date" id="taskDue" class="input-field">
+              </div>
+            </div>
+            <div class="px-5 pb-5 flex justify-end gap-2">
+              <button id="taskModalCancel" class="btn-secondary text-xs py-2 px-5">Cancel</button>
+              <button id="taskModalSave" class="btn-primary text-xs py-2 px-5">Add Task</button>
+            </div>
+          </div>
+        </div>
+      </div>
     `;
 
     app.querySelectorAll('.toggle-task').forEach(cb => {
@@ -38,12 +70,29 @@ export function renderTasks(app) {
     app.querySelectorAll('.delete-task').forEach(btn => {
       btn.addEventListener('click', () => { deleteTask(btn.dataset.tid); render(); });
     });
-    document.getElementById('addTaskBtn')?.addEventListener('click', () => {
-      const text = prompt('New task:');
-      if (!text) return;
-      const due = prompt('Due date (YYYY-MM-DD, optional):') || '';
-      addTask(text, due || null);
+
+    // Task modal
+    const taskModal = document.getElementById('taskModal');
+    const openModal = () => { taskModal?.classList.remove('hidden'); document.getElementById('taskText')?.focus(); };
+    const closeModal = () => { taskModal?.classList.add('hidden'); };
+
+    document.getElementById('addTaskBtn')?.addEventListener('click', openModal);
+    document.getElementById('taskModalBackdrop')?.addEventListener('click', closeModal);
+    document.getElementById('taskModalClose')?.addEventListener('click', closeModal);
+    document.getElementById('taskModalCancel')?.addEventListener('click', closeModal);
+
+    document.getElementById('taskModalSave')?.addEventListener('click', () => {
+      const text = document.getElementById('taskText')?.value.trim();
+      if (!text) { document.getElementById('taskText')?.focus(); return; }
+      const due = document.getElementById('taskDue')?.value || null;
+      addTask(text, due);
+      closeModal();
       render();
+    });
+
+    // Allow Enter to submit from task input
+    document.getElementById('taskText')?.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); document.getElementById('taskModalSave')?.click(); }
     });
   }
   render();
